@@ -16,6 +16,7 @@ import OpenAI from "openai";
  */
 async function getApiKey(): Promise<string | undefined> {
   if (process.env.MORPH_LLM_API_KEY) return process.env.MORPH_LLM_API_KEY;
+  if (process.env.MORPH_API_KEY)     return process.env.MORPH_API_KEY;
   try {
     const keytar = await import("keytar");
     const os = await import("node:os");
