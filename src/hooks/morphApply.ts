@@ -105,6 +105,9 @@ async function main() {
     if (!txt) throw new Error("Empty response from Morph Apply");
 
     const merged = extractBetween(txt, "<merged>", "</merged>");
+    if (!merged || merged.trim().length < 10) {
+      throw new Error("Refusing to overwrite with empty/near-empty merge.");
+    }
     await fs.writeFile(filePath, merged, "utf8");
     console.log(pc.green(`[morph] Applied merge to ${path.relative(process.cwd(), filePath)}`));
     process.exit(0);
