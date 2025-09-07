@@ -335,7 +335,7 @@ async function main() {
 
   const hookDist = path.resolve("dist/hooks/morphApply.js");
   if (!exists(hookDist)) {
-    console.log(pc.cian ? pc.cian("Building project...") : "Building project...");
+    console.log(pc.cyan ? pc.cyan("Building project...") : "Building project...");
     const { spawnSync } = await import("node:child_process");
     const res = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"], { stdio: "inherit" });
     if (res.status !== 0) process.exit(res.status ?? 1);
