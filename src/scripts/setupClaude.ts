@@ -259,34 +259,59 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 
   console.log(pc.green("✔ Claude-Code Morph integration installed."));
 
-  // Note for Dev Container users: The NODE_PATH environment variable might need to be set
-  // in your .devcontainer/devcontainer.json to ensure global Node.js modules are found.
+  // Dev Container NODE_PATH and libsecret patching
+  const DEVCONTAINER_DIR = path.join(process.cwd(), ".devcontainer");
+  const DEVCONTAINER_JSON_PATH = path.join(DEVCONTAINER_DIR, "devcontainer.json");
+  const DEVCONTAINER_DOCKERFILE_PATH = path.join(DEVCONTAINER_DIR, "Dockerfile");
 
-  // Dev Container NODE_PATH patching
-  const DEVCONTAINER_PATH = path.join(process.cwd(), ".devcontainer", "devcontainer.json");
-  if (exists(DEVCONTAINER_PATH)) {
+  if (exists(DEVCONTAINER_JSON_PATH)) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const ans = (await rl.question(
-      "Dev Container detected. Patch .devcontainer/devcontainer.json with NODE_PATH? (y/N) "
+      "Dev Container detected. Offer to patch .devcontainer/devcontainer.json and create Dockerfile for full compatibility? (y/N) "
     )).trim().toLowerCase();
     rl.close();
 
     if (ans === "y") {
       let devcontainerConfig: any = {};
       try {
-        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_PATH, "utf8"));
+        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8"));
       } catch (e) {
-        console.warn(pc.yellow(`Failed to read or parse ${DEVCONTAINER_PATH}: ${String(e)}`));
+        console.warn(pc.yellow(`Failed to read or parse ${DEVCONTAINER_JSON_PATH}: ${String(e)}`));
       }
 
+      // Patch NODE_PATH
       devcontainerConfig.remoteEnv ??= {};
-      const nodePathValue = "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules"; // This should be dynamically determined if possible
+      const nodePathValue = "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules";
       if (devcontainerConfig.remoteEnv.NODE_PATH !== nodePathValue) {
         devcontainerConfig.remoteEnv.NODE_PATH = nodePathValue;
-        await fsp.writeFile(DEVCONTAINER_PATH, JSON.stringify(devcontainerConfig, null, 2), "utf8");
-        console.log(pc.green(`✔ Patched ${DEVCONTAINER_PATH} with NODE_PATH.`));
+        console.log(pc.green(`✔ Patched ${DEVCONTAINER_JSON_PATH} with NODE_PATH.`));
       } else {
-        console.log(pc.gray(`${DEVCONTAINER_PATH} already contains correct NODE_PATH.`));
+        console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already contains correct NODE_PATH.`));
+      }
+
+      // Patch Dockerfile reference
+      if (!devcontainerConfig.build || devcontainerConfig.build.dockerfile !== "Dockerfile") {
+        devcontainerConfig.build = {
+          dockerfile: "Dockerfile"
+        };
+        console.log(pc.green(`✔ Patched ${DEVCONTAINER_JSON_PATH} to use Dockerfile.`));
+      } else {
+        console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already uses Dockerfile.`));
+      }
+
+      await fsp.writeFile(DEVCONTAINER_JSON_PATH, JSON.stringify(devcontainerConfig, null, 2), "utf8");
+
+      // Create Dockerfile
+      const dockerfileContent = `FROM mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye\n\n# Install system dependencies for keytar (libsecret)\nRUN apt-get update && apt-get install -y \
+    libsecret-1-dev \
+    python3-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*\n`;
+      if (!exists(DEVCONTAINER_DOCKERFILE_PATH)) {
+        await fsp.writeFile(DEVCONTAINER_DOCKERFILE_PATH, dockerfileContent, "utf8");
+        console.log(pc.green(`✔ Created ${DEVCONTAINER_DOCKERFILE_PATH} for keytar compatibility.`));
+      } else {
+        console.log(pc.gray(`${DEVCONTAINER_DOCKERFILE_PATH} already exists.`));
       }
     }
   }

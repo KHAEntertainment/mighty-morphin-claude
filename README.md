@@ -61,6 +61,17 @@ Add the following to your `.devcontainer/devcontainer.json` file:
 
 The installer script will attempt to detect if you are in a project with a `.devcontainer` folder and offer to patch it for you.
 
+### Node.js Version Requirement
+
+This project requires Node.js version `17.0.0` or higher due to the use of promise-based `readline` API and `fs.cp`.
+
+If you need to upgrade Node.js, you can use a Node Version Manager (NVM) like `nvm` (Node Version Manager) or `fnm` (Fast Node Manager). For example, using `nvm`:
+
+```bash
+nvm install 17
+nvm use 17
+```
+
 ## Usage
 
 ### Automatic Merging

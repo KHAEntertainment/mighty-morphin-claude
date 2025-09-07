@@ -215,7 +215,7 @@ Copy dist/hooks/morphApply.js to ~/.claude/hooks/morphApply.js, then deep-merge:
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/morphApply.js",
+            "command": "node $HOME/.claude/hooks/morphApply.js",
             "timeout": 60
           }
         ]
@@ -358,7 +358,7 @@ async function main() {
     hooks: { PostToolUse: [
       {
         matcher: "Edit|Write|MultiEdit",
-        hooks: [{ type: "command", command: "node ~/.claude/hooks/morphApply.js", timeout: 60 }]
+        hooks: [{ type: "command", command: "node $HOME/.claude/hooks/morphApply.js", timeout: 60 }]
       }
     ] }
   };

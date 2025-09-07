@@ -15,8 +15,5 @@
       ]
     }
   },
-  "postCreateCommand": "npm install",
-  "remoteEnv": {
-    "NODE_PATH": "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules"
-  }
+  "postCreateCommand": "npm install"
 }
