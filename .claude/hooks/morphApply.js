@@ -32,7 +32,7 @@ async function readStdin() {
 }
 function extractBetween(text, startTag = "<merged>", endTag = "</merged>") {
     const s = text.indexOf(startTag);
-    const e = text.indexOf(endTag);
+    const e = text.indexOf(endTag, s + startTag.length);
     if (s >= 0 && e > s)
         return text.slice(s + startTag.length, e).trim();
     return text.trim();
