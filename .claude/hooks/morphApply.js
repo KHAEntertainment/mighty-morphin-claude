@@ -91,13 +91,10 @@ async function main() {
     try {
         const resp = await client.chat.completions.create({
             model: "morph-v3-large",
-            messages: [{ role: "user", content: userMessage }]
-        });
-        const txt = resp.choices?.[0]?.message?.content ?? "";
-        if (!txt)
-            throw new Error("Empty response from Morph Apply");
-        const merged = extractBetween(txt, "<merged>", "</merged>");
-        await fs.writeFile(filePath, merged, "utf8");
+            messages: [{ role: "user", content: userMessage }],
+            temperature: 0,
+            top_p: 1
+        }, { timeout: 60_000 });
         console.log(pc.green(`[morph] Applied merge to ${path.relative(process.cwd(), filePath)}`));
         process.exit(0);
     }
