@@ -1,17 +1,17 @@
-# Morph Hook
+# Mighty Morphin Claude
 
-**Morph Hook** is a cross&#x2011;platform command&#x2011;line tool and Git hook helper for integrating
+**Mighty Morphin Claude** is a cross&#x2011;platform command&#x2011;line tool and Claude-Code hook helper for integrating
 the [MorphLLM Fast Apply](https://docs.morphllm.com/models/apply) API into your development
 workflow without requiring any special IDE plug‑ins or model-control APIs. The
 goal of this project is to provide a low‑latency, deterministic way to apply
 structural edits to your source code by writing simple *intent* files and
 letting a background watcher call the Morph Apply backend.  When paired with
-your favourite code‑assistant (Claude, GPT‑4o, etc.), Morph Hook makes it
+your favourite code‑assistant (Claude, GPT‑4o, etc.), Mighty Morphin Claude makes it
 trivial to reason about changes conversationally and offload the actual file
 updates to a specialised apply model.
 
 This repository contains the TypeScript sources for the command, watch service,
-and Git pre‑commit integration.  See [`docs/morphllm.md`](docs/morphllm.md)
+and Claude-Code integration.  See [`docs/morphllm.md`](docs/morphllm.md)
 for a copy of the upstream MorphLLM documentation, and [`ADRS/ADR-0001-command-hook-vs-mcp.md`](ADRS/ADR-0001-command-hook-vs-mcp.md)
 for an architectural rationale.
 
@@ -34,6 +34,32 @@ npm run setup:claude
 The installer will guide you through the process of choosing an installation scope (project, global, or both) and configuring your MorphLLM API key.
 
 To rerun the installer at any time, simply run the command again.
+
+### Secure API Key Storage
+
+The installer will prompt you to securely store your `MORPH_LLM_API_KEY` using your operating system's keychain (via `keytar`). If `keytar` is unable to access the keychain (e.g., in some Dev Container environments without `libsecret`), you will need to set the `MORPH_LLM_API_KEY` as an environment variable manually.
+
+### Rerunning the Installer
+
+To rerun the installer at any time, simply run the command again:
+
+```bash
+npm run setup:claude
+```
+
+### Dev Container Considerations
+
+If you are using a VS Code Dev Container, you might need to explicitly set the `NODE_PATH` environment variable to ensure that globally installed Node.js modules (like `picocolors` used by the `morphApply.js` hook) are correctly found.
+
+Add the following to your `.devcontainer/devcontainer.json` file:
+
+```json
+"remoteEnv": {
+  "NODE_PATH": "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules"
+}
+```
+
+The installer script will attempt to detect if you are in a project with a `.devcontainer` folder and offer to patch it for you.
 
 ## Usage
 

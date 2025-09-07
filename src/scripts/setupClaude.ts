@@ -175,7 +175,8 @@ async function main() {
       path.join(PROJECT_CLAUDE, "commands", "morph-apply.md"),
       `---\nargument-hint: [description] [file_path]\ndescription: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
 ## Context
-- Current git status: !\`git status -s\`
+- Current git status: !
+<0xC2><0xA0>`git status -s`
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -208,9 +209,11 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 
     await writeIfMissing(
       path.join(GLOBAL_CLAUDE, "commands", "morph-apply.md"),
-      `---\nargument-hint: [description] [file_path]\ndescription: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
+      `---\nargument-hint: [description] [file_path]
+description: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
 ## Context
-- Current git status: !\`git status -s\`
+- Current git status: !
+<0xC2><0xA0>`git status -s`
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -255,6 +258,38 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
   }
 
   console.log(pc.green("✔ Claude-Code Morph integration installed."));
+
+  // Note for Dev Container users: The NODE_PATH environment variable might need to be set
+  // in your .devcontainer/devcontainer.json to ensure global Node.js modules are found.
+
+  // Dev Container NODE_PATH patching
+  const DEVCONTAINER_PATH = path.join(process.cwd(), ".devcontainer", "devcontainer.json");
+  if (exists(DEVCONTAINER_PATH)) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ans = (await rl.question(
+      "Dev Container detected. Patch .devcontainer/devcontainer.json with NODE_PATH? (y/N) "
+    )).trim().toLowerCase();
+    rl.close();
+
+    if (ans === "y") {
+      let devcontainerConfig: any = {};
+      try {
+        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_PATH, "utf8"));
+      } catch (e) {
+        console.warn(pc.yellow(`Failed to read or parse ${DEVCONTAINER_PATH}: ${String(e)}`));
+      }
+
+      devcontainerConfig.remoteEnv ??= {};
+      const nodePathValue = "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules"; // This should be dynamically determined if possible
+      if (devcontainerConfig.remoteEnv.NODE_PATH !== nodePathValue) {
+        devcontainerConfig.remoteEnv.NODE_PATH = nodePathValue;
+        await fsp.writeFile(DEVCONTAINER_PATH, JSON.stringify(devcontainerConfig, null, 2), "utf8");
+        console.log(pc.green(`✔ Patched ${DEVCONTAINER_PATH} with NODE_PATH.`));
+      } else {
+        console.log(pc.gray(`${DEVCONTAINER_PATH} already contains correct NODE_PATH.`));
+      }
+    }
+  }
 }
 
 main().catch((e) => {
