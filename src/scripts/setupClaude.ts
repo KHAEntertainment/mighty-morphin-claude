@@ -69,23 +69,38 @@ async function main() {
   const projSettingsPath = path.join(PROJECT_CLAUDE, "settings.json");
   const globSettingsPath = path.join(GLOBAL_CLAUDE, "settings.json");
 
+  const projectHookPath = path.join(PROJECT_CLAUDE, "hooks", "morphApply.js");
+  const globalHookPath = path.join(GLOBAL_CLAUDE, "hooks", "morphApply.js");
+
   const projectHook = {
     hooks: { PostToolUse: [
       {
         matcher: "Edit|Write|MultiEdit",
-        hooks: [{ type: "command", command: "node $CLAUDE_PROJECT_DIR/dist/hooks/morphApply.js", timeout: 60 }]
+        hooks: [
+          {
+            type: "command",
+            command: `node "${projectHookPath}"`,
+            timeout: 60
+          }
+        ]
       }
-    ] } 
+    ] }
   };
+
   const globalHook = {
     hooks: { PostToolUse: [
       {
         matcher: "Edit|Write|MultiEdit",
-        hooks: [{ type: "command", command: "node ~/.claude/hooks/morphApply.js", timeout: 60 }]
+        hooks: [
+          {
+            type: "command",
+            command: `node "${globalHookPath}"`,
+            timeout: 60
+          }
+        ]
       }
-    ] } 
+    ] }
   };
-
   if (scope === "project" || scope === "both") {
     await ensureDir(PROJECT_CLAUDE);
     await ensureDir(path.join(PROJECT_CLAUDE, "hooks"));
