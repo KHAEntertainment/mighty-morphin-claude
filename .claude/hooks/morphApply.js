@@ -5,15 +5,14 @@ import process from "node:process";
 import pc from "picocolors";
 import OpenAI from "openai";
 async function getApiKey() {
-    if (process.env.MORPH_LLM_API_KEY)
-        return process.env.MORPH_LLM_API_KEY;
+    if (process.env.MORPH_LLM_API_KEY) return process.env.MORPH_LLM_API_KEY;
+    if (process.env.MORPH_API_KEY) return process.env.MORPH_API_KEY;
     try {
         const keytar = await import("keytar");
         const os = await import("node:os");
         const user = os.userInfo().username;
-        return await keytar.default.getPassword("morphllm", user) ?? undefined;
-    }
-    catch {
+        return (await keytar.default.getPassword("morphllm", user)) ?? undefined;
+    } catch {
         return undefined;
     }
 }
