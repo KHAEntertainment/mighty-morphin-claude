@@ -3,7 +3,7 @@
 **Feature Branch**: `001-goal-replace-the`  
 **Created**: 2025-09-07
 **Status**: Draft  
-**Input**: User description: "Goal: Replace the git-hook approach of the current project state with a Claude-Code–native integration that auto-runs Morph Fast-Apply after code edits, plus a manual /morph-apply command and a proactive subagent. The installer must ask whether to install Globally (~/.claude), Project-only (.claude), or Both, and then provision the right files/config for each target. Detailed guideline for this implemntation is here @/Users/bbrenner/Documents/Scripting Projects/mighty-morphin-claude/docs/upgrade-guide.md"
+**Input**: User description: "Goal: Replace the git-hook approach of the current project state with a Claude-Code–native integration that auto-runs Morph Fast-Apply after code edits, plus a manual /morph-apply command and a proactive subagent. The installer must ask whether to install Globally (~/.claude), Project-only (.claude), or Both, and then provision the right files/config for each target. Detailed guideline for this implementation is in `docs/upgrade-guide.md`"
 
 ## Execution Flow (main)
 ```
