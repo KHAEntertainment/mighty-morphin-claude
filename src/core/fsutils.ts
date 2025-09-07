@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import glob from 'glob';
+import * as glob from 'glob';
 
 export interface ResolvedFile {
   path: string;
