@@ -1,0 +1,44 @@
+{
+  "name": "morph-hook",
+  "version": "0.1.0",
+  "description": "Command/hook integration for MorphLLM FastApply",
+  "main": "dist/cli.js",
+  "type": "module",
+  "bin": {
+    "morph-hook": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "prepare": "npm run build",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run test",
+    "test": "node ./dist/cli.js --help"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "morphllm",
+    "cli",
+    "git-hook",
+    "file-edit"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^10.0.0",
+    "glob": "^10.2.7",
+    "keytar": "^8.3.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.3.1",
+    "typescript": "^5.1.6",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.0"
+  }
+}
