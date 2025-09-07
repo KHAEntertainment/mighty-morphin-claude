@@ -64,6 +64,12 @@ async function main() {
         console.log(pc.gray(`[morph] ${toolName}: no content in hook; skipping ${filePath}`));
         process.exit(0);
     }
+    const abs = path.resolve(String(filePath));
+    const root = process.cwd() + path.sep;
+    if (!abs.startsWith(root)) {
+        console.error(pc.red(`[morph] Refusing to write outside workspace: ${abs}`));
+        process.exit(1);
+    }
     let original = "";
     try {
         original = readFileSync(filePath, "utf8");
