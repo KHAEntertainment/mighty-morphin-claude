@@ -1,7 +1,7 @@
 # Implementation Plan: Claude-Code Native Integration for Morph Fast-Apply
 
 **Branch**: `001-goal-replace-the` | **Date**: 2025-09-07 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/Users/bbrenner/Documents/Scripting Projects/mighty-morphin-claude/specs/001-goal-replace-the/spec.md`
+**Input**: Feature specification from `specs/001-goal-replace-the/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
