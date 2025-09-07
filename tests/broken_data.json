@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "email": "alice@example.com",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "email": "bob@example.com",
+      "isActive": false
+    }
+  ],
+  "products": [
+    {
+      "productId": "A1",
+      "productName": "Laptop",
+      "price": 1200.00,
+      "inStock": true
+    },
+    {
+      "productId": "B2",
+      "productName": "Mouse",
+      "price": 25.50,
+      "inStock": false
+    }
+  ]
+}
