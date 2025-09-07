@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # Common functions and variables for all scripts
 
-# Get repository root
+# get_repo_root outputs the Git repository root directory (the path returned by `git rev-parse --show-toplevel`).
 get_repo_root() {
     git rev-parse --show-toplevel
 }
 
-# Get current branch
+# get_current_branch returns the current Git branch name as reported by `git rev-parse --abbrev-ref HEAD`.
 get_current_branch() {
     git rev-parse --abbrev-ref HEAD
 }
 
 # Check if current branch is a feature branch
-# Returns 0 if valid, 1 if not
+# check_feature_branch verifies that the given branch name follows the feature-branch pattern `NNN-name` (three digits, a hyphen, then the feature name). It prints an error and returns 1 on mismatch, returns 0 when valid (parameter: branch name).
 check_feature_branch() {
     local branch="$1"
     if [[ ! "$branch" =~ ^[0-9]{3}- ]]; then
@@ -23,7 +23,7 @@ check_feature_branch() {
     return 0
 }
 
-# Get feature directory path
+# get_feature_dir returns the path to a feature's specs directory inside the repo (i.e. "$repo_root/specs/$branch").
 get_feature_dir() {
     local repo_root="$1"
     local branch="$2"
@@ -32,7 +32,8 @@ get_feature_dir() {
 
 # Get all standard paths for a feature
 # Usage: eval $(get_feature_paths)
-# Sets: REPO_ROOT, CURRENT_BRANCH, FEATURE_DIR, FEATURE_SPEC, IMPL_PLAN, TASKS
+# get_feature_paths prints shell assignments for feature-related paths (REPO_ROOT, CURRENT_BRANCH, FEATURE_DIR, FEATURE_SPEC, IMPL_PLAN, TASKS, RESEARCH, DATA_MODEL, QUICKSTART, CONTRACTS_DIR).
+# The output is intended to be evaluated (e.g., `eval $(get_feature_paths)`) so calling code receives those variables set for the current repository and branch.
 get_feature_paths() {
     local repo_root=$(get_repo_root)
     local current_branch=$(get_current_branch)
@@ -50,7 +51,7 @@ get_feature_paths() {
     echo "CONTRACTS_DIR='$feature_dir/contracts'"
 }
 
-# Check if a file exists and report
+# check_file checks whether the given file exists and prints a status line ("✓" on success, "✗" on failure) with the provided description; returns 0 if the file exists, 1 otherwise.
 check_file() {
     local file="$1"
     local description="$2"
@@ -63,7 +64,7 @@ check_file() {
     fi
 }
 
-# Check if a directory exists and has files
+# check_dir checks that a directory exists and contains at least one entry; it prints a checkmark or cross prefixed by the provided description and returns 0 on success or 1 on failure.
 check_dir() {
     local dir="$1"
     local description="$2"

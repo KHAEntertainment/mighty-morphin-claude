@@ -5,6 +5,15 @@ import process from "node:process";
 import pc from "picocolors";
 import OpenAI from "openai";
 
+/**
+ * Retrieves the Morph LLM API key if available.
+ *
+ * First returns the value of the MORPH_LLM_API_KEY environment variable if set.
+ * If not present, attempts to dynamically import the system keyring (keytar) and
+ * the OS module to look up a stored password for service "morphllm" under the
+ * current OS username. Returns the found key or `undefined` if none is available
+ * or if any lookup/import error occurs.
+ */
 async function getApiKey(): Promise<string | undefined> {
   if (process.env.MORPH_LLM_API_KEY) return process.env.MORPH_LLM_API_KEY;
   try {
@@ -17,6 +26,14 @@ async function getApiKey(): Promise<string | undefined> {
   }
 }
 
+/**
+ * Reads all data from standard input and returns it as a UTF-8 string.
+ *
+ * The returned promise resolves with the full accumulated stdin content when the stream ends,
+ * and rejects if the stdin stream emits an "error".
+ *
+ * @returns A promise that resolves to the complete stdin content as a string.
+ */
 async function readStdin(): Promise<string> {
   return await new Promise((resolve, reject) => {
     let data = "";
@@ -29,6 +46,17 @@ async function readStdin(): Promise<string> {
   });
 }
 
+/**
+ * Extracts and returns the substring found between two tag markers.
+ *
+ * If both `startTag` and `endTag` are present in `text` and `endTag` occurs after `startTag`,
+ * the function returns the trimmed text between them. Otherwise it returns `text.trim()`.
+ *
+ * @param text - The input string to search.
+ * @param startTag - Opening marker to locate the start of the extracted region (default: `"<merged>"`).
+ * @param endTag - Closing marker to locate the end of the extracted region (default: `"</merged>"`).
+ * @returns The trimmed content between the tags, or the trimmed original `text` if tags are not found in order.
+ */
 function extractBetween(text: string, startTag = "<merged>", endTag = "</merged>") {
   const s = text.indexOf(startTag);
   const e = text.indexOf(endTag);
@@ -36,6 +64,25 @@ function extractBetween(text: string, startTag = "<merged>", endTag = "</merged>
   return text.trim();
 }
 
+/**
+ * Read hook input from stdin, merge provided update into a target file using Morph LLM, and write the merged result back to disk.
+ *
+ * The function:
+ * - Parses JSON from stdin to locate a target file path (from `tool_response.filePath` or `tool_input.file_path`) and an update payload (`tool_input.content`).
+ * - Reads the existing file contents, calls the Morph API (model `morph-v3-large`) to merge the `<update>` into the `<code>`, and expects the model to return the merged file wrapped in `<merged>` tags.
+ * - Extracts the merged content and overwrites the target file with it.
+ *
+ * Side effects:
+ * - Reads stdin and the target file from disk.
+ * - Writes the merged content to the target file.
+ * - Exits the process with codes:
+ *   - 0 for success or benign skips (missing input/file_path/content),
+ *   - 1 for errors (JSON parse failure, file read/write failures, missing API key, empty API response, or API/processing errors).
+ *
+ * Behavior notes:
+ * - If no stdin input or required fields are missing, the function logs a message and exits with code 0 (no-op).
+ * - If the Morph API response is empty or the merge fails, the function logs an error and exits with code 1.
+ */
 async function main() {
   const raw = await readStdin();
   if (!raw?.trim()) {

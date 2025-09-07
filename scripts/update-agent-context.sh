@@ -32,7 +32,7 @@ NEW_TESTING=$(grep "^**Testing**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^
 NEW_DB=$(grep "^**Storage**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Storage**: //' | grep -v "N/A" | grep -v "NEEDS CLARIFICATION" || echo "")
 NEW_PROJECT_TYPE=$(grep "^**Project Type**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Project Type**: //' || echo "")
 
-# Function to update a single agent context file
+# update_agent_file updates a single agent context file from the current feature plan, creating it from a template if missing or merging extracted plan data into an existing file (adds new technologies, project structure entries, language-specific commands, updates recent changes and last-updated date, and preserves any manual additions).
 update_agent_file() {
     local target_file="$1"
     local agent_name="$2"
