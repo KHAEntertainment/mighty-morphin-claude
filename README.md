@@ -12,56 +12,54 @@ updates to a specialised apply model.
 
 This repository contains the TypeScript sources for the command, watch service,
 and Git pre‑commit integration.  See [`docs/morphllm.md`](docs/morphllm.md)
-for a copy of the upstream MorphLLM documentation, and [`ADR-0001-command-hook-vs-mcp.md`](ADRS/ADR-0001-command-hook-vs-mcp.md)
+for a copy of the upstream MorphLLM documentation, and [`ADRS/ADR-0001-command-hook-vs-mcp.md`](ADRS/ADR-0001-command-hook-vs-mcp.md)
 for an architectural rationale.
 
 ## Features
 
-* Securely store your Morph API key using the operating system keychain via
-  [`keytar`](https://github.com/atom/node-keytar).
-* Enqueue edit intents from the command line.  Intent JSON files live under
-  `.morph/queue` and contain your goal along with optional file globs and
-  hints.
-* Watch for queued intents and call Morph Apply via either a local CLI or
-  HTTP API.  The watcher writes logs and diff files into `.morph/out`.
-* Provide a Git pre‑commit hook that ensures staged changes are reconciled
-  through Morph before committing.
-* Expose additional utilities like `morph-hook status` to summarise recent
-  operations and `morph-hook githook install` to set up hooks with a single
-  command.
+*   **Claude-Code Native Integration**: Automatically apply Morph Fast-Apply merges after code edits.
+*   **Manual Control**: A `/morph-apply` slash command for manual merges.
+*   **Proactive Sub-agent**: A sub-agent that suggests using `/morph-apply` after code edits.
+*   **Flexible Installation**: Install the integration at the project level, global level, or both.
+*   **Secure API Key Storage**: Securely store your Morph API key using the operating system keychain.
+
+## Installation
+
+To install the Claude-Code integration, run the following command from the root of the repository:
+
+```bash
+npm run setup:claude
+```
+
+The installer will guide you through the process of choosing an installation scope (project, global, or both) and configuring your MorphLLM API key.
+
+To rerun the installer at any time, simply run the command again.
 
 ## Usage
 
-This project is still in early development.  To build it locally you will
-need a current version of Node.js and npm.  After cloning the repository run:
+### Automatic Merging
 
-```bash
-npm install
-npm run build
+Once installed, the integration will automatically merge your code edits when you use the `Edit`, `Write`, or `MultiEdit` tools in Claude-Code.
 
-# configure your API key
-npx morph-hook install
+### Manual Merging
 
-# enqueue a dry‑run goal
-npx morph-hook enqueue "Rename Foo to Bar" --files "src/**/*.ts" --dry-run
-
-# start watching
-npx morph-hook watch
+You can manually trigger a merge using the `/morph-apply` slash command:
 
 ```
-
-To enforce Morph Apply on every commit, install the Git hook:
-
-```bash
-npx morph-hook githook install
-
-# commit as usual
-git add -A
-git commit -m "feat: my changes"
-
+/morph-apply "<description of your change>" <file_path>
 ```
 
-See `morph-hook --help` for a full list of commands and flags.
+### Proactive Sub-agent
+
+The `morph-agent` will proactively suggest using the `/morph-apply` command after you make code edits.
+
+### Smoke Test
+
+To verify that the integration is working correctly, you can run the smoke test:
+
+```bash
+npm run test:hook
+```
 
 ## Project structure
 

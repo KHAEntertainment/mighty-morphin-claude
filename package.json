@@ -13,7 +13,10 @@
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run test",
-    "test": "node ./dist/cli.js --help"
+    "test": "node ./dist/cli.js --help",
+    "setup:claude": "node dist/scripts/setupClaude.js",
+    "postinstall": "node dist/scripts/setupClaude.js --noninteractive || true",
+    "test:hook": "bash scripts/smokeHook.sh"
   },
   "repository": {
     "type": "git",
@@ -30,8 +33,11 @@
   "dependencies": {
     "commander": "^10.0.0",
     "glob": "^10.2.7",
-    "keytar": "^8.3.0",
-    "uuid": "^9.0.1"
+    "keytar": "^7.9.0",
+    "uuid": "^9.0.1",
+    "openai": "^4.56.0",
+    "fs-extra": "^11.2.0",
+    "picocolors": "^1.0.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -39,6 +45,7 @@
     "typescript": "^5.1.6",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.0.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "tsx": "^4.19.0"
   }
 }
