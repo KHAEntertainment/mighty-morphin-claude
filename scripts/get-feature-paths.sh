@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 # Get all paths
-eval $(get_feature_paths)
+eval "$(get_feature_paths)"
 
 # Check if on feature branch
 check_feature_branch "$CURRENT_BRANCH" || exit 1
