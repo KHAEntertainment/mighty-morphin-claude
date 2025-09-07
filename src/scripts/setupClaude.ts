@@ -10,6 +10,17 @@ type Scope = "project" | "global" | "both";
 const PROJECT_CLAUDE = path.resolve(".claude");
 const GLOBAL_CLAUDE = path.join(os.homedir(), ".claude");
 
+/**
+ * Prompt the user (unless running noninteractive) to choose the installation scope for the integration.
+ *
+ * If the CLI was invoked with `--noninteractive` this immediately returns `"project"`.
+ * Otherwise it asks the user to choose:
+ * - `1` or any other input → `"project"`
+ * - `2` → `"global"`
+ * - `3` → `"both"`
+ *
+ * @returns The chosen scope: `"project" | "global" | "both"`.
+ */
 async function promptScope(): Promise<Scope> {
   if (process.argv.includes("--noninteractive")) return "project";
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -22,9 +33,34 @@ async function promptScope(): Promise<Scope> {
   return "project";
 }
 
+/**
+ * Create a directory and any missing parent directories.
+ *
+ * @param p - Filesystem path of the directory to create; parents will be created as needed.
+ * @returns A promise that resolves when the directory has been created.
+ */
 async function ensureDir(p: string) { await fsp.mkdir(p, { recursive: true }); }
+/**
+ * Synchronously checks whether a filesystem path exists and is accessible.
+ *
+ * @param p - Filesystem path to check
+ * @returns True if the path exists and is accessible, otherwise false
+ */
 function exists(p: string) { try { fs.accessSync(p); return true; } catch { return false; } }
 
+/**
+ * Merge PostToolUse hook entries into a JSON settings file, deduplicating by matcher and hook list.
+ *
+ * Ensures the destination settings file exists (creates parent directories if needed), loads its JSON,
+ * merges any PostToolUse hooks from `add` into the existing base.hooks.PostToolUse array, and writes the
+ * normalized, formatted JSON back to `destPath`.
+ *
+ * Incoming and existing hooks are deduplicated using a composite key of the JSON-serialized `hooks` array
+ * plus the `matcher` string; when duplicates are found, the incoming hook replaces the existing one.
+ *
+ * @param destPath - Filesystem path to the settings JSON file to update (created if missing).
+ * @param add - Object that may contain `hooks.PostToolUse` (an array of hook definitions) to merge.
+ */
 async function deepMergeSettings(destPath: string, add: any) {
   let base: any = {};
   if (exists(destPath)) {
@@ -44,12 +80,40 @@ async function deepMergeSettings(destPath: string, add: any) {
   await fsp.writeFile(destPath, JSON.stringify(base, null, 2), "utf8");
 }
 
+/**
+ * Write a file only if it does not already exist.
+ *
+ * Ensures the parent directory exists (created recursively) and writes `content`
+ * to the file at `p` using UTF-8 encoding. If the file already exists, no action
+ * is taken.
+ *
+ * @param p - Destination file path
+ * @param content - File contents to write when the file is missing
+ */
 async function writeIfMissing(p: string, content: string) {
   if (exists(p)) return;
   await ensureDir(path.dirname(p));
   await fsp.writeFile(p, content, "utf8");
 }
 
+/**
+ * Orchestrates installation of the Claude‑Code Morph integration into project and/or global scopes.
+ *
+ * Ensures the hook implementation exists (runs `npm run build` if needed), copies hook scripts into
+ * the selected .claude directories (project: ./ .claude, global: ~/.claude), merges a PostToolUse hook into
+ * the corresponding settings.json (deduplicating existing hooks), and writes command and agent Markdown files
+ * under commands/ and agents/ when missing.
+ *
+ * Prompts the user (unless `--noninteractive` is passed) to choose installation scope (project, global, or both)
+ * and, if MORPH_LLM_API_KEY is not set, offers to store an API key in the OS keychain via keytar.
+ *
+ * Side effects:
+ * - May run `npm run build` and exit the process on build failure.
+ * - Writes files and directories under project and/or global .claude locations.
+ * - May call `process.exit` immediately when `--uninstall` is provided.
+ *
+ * @returns A promise that resolves when installation completes.
+ */
 async function main() {
   if (process.argv.includes("--uninstall")) {
     console.log(pc.yellow("Uninstall not implemented in this minimal script."));
