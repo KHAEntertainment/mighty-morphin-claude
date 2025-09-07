@@ -97,8 +97,10 @@ async function main() {
   try {
     const resp = await client.chat.completions.create({
       model: "morph-v3-large",
-      messages: [{ role: "user", content: userMessage }]
-    });
+      messages: [{ role: "user", content: userMessage }],
+      temperature: 0,
+      top_p: 1
+    }, { timeout: 60_000 });
     const txt = resp.choices?.[0]?.message?.content ?? "";
     if (!txt) throw new Error("Empty response from Morph Apply");
 
