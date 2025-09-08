@@ -281,14 +281,13 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 
       // Patch NODE_PATH
       devcontainerConfig.remoteEnv ??= {};
-      const nodePathValue = "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules";
+      const nodePathValue = "/usr/local/share/nvm/versions/node/current/lib/node_modules";
       if (devcontainerConfig.remoteEnv.NODE_PATH !== nodePathValue) {
         devcontainerConfig.remoteEnv.NODE_PATH = nodePathValue;
         console.log(pc.green(`✔ Patched ${DEVCONTAINER_JSON_PATH} with NODE_PATH.`));
       } else {
         console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already contains correct NODE_PATH.`));
       }
-
       // Patch Dockerfile reference
       if (!devcontainerConfig.build || devcontainerConfig.build.dockerfile !== "Dockerfile") {
         devcontainerConfig.build = {
