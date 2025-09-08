@@ -118,9 +118,9 @@ Task: "Ensure all new code adheres to project's linting rules."
 ## Validation Checklist
 *GATE: Checked by main() before returning*
 
-- [ ] All contracts have corresponding tests
-- [ ] All entities have model tasks
-- [ ] All tests come before implementation
-- [ ] Parallel tasks truly independent
-- [ ] Each task specifies exact file path
-- [ ] No task modifies same file as another [P] task
+- [x] All contracts have corresponding tests
+- [x] All entities have model tasks
+- [x] All tests come before implementation
+- [x] Parallel tasks truly independent
+- [x] Each task specifies exact file path
+- [x] No task modifies same file as another [P] task
