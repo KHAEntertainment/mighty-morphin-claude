@@ -148,8 +148,18 @@ async function main() {
             temperature: 0,
             top_p: 1
         }, { timeout: 60_000 });
-        console.log(pc.green(`[morph] Applied merge to ${path.relative(process.cwd(), filePath)}`));
-        process.exit(0);
+        const txt = resp.choices?.[0]?.message?.content ?? "";
+        if (!txt)
+            throw new Error("Empty response from Morph Apply");
+        const merged = extractBetween(txt, "<merged>", "</merged>");
+        if (!merged || merged.trim() === "") {
+            console.warn(pc.yellow(`[morph] Warning: Empty merged content for ${path.relative(process.cwd(), filePath)}. Original file preserved.`));
+            process.exit(0); // Exit with 0 to indicate non-blocking success, as per user's preference for "skip writing and exit 0"
+        } else {
+            await fs.writeFile(filePath, merged, "utf8");
+            console.log(pc.green(`[morph] Applied merge to ${path.relative(process.cwd(), filePath)}`));
+            process.exit(0);
+        }
     }
     catch (e) {
         console.error(pc.red(`[morph] Apply failed: ${e?.message ?? String(e)}`));

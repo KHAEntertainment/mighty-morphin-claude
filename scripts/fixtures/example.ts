@@ -1,1 +1,1 @@
-<merged>export const msg = "hello world (updated)";
+export const msg = "hello world (updated)";

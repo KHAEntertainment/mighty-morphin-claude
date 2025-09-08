@@ -175,7 +175,8 @@ async function main() {
       path.join(PROJECT_CLAUDE, "commands", "morph-apply.md"),
       `---\nargument-hint: [description] [file_path]\ndescription: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
 ## Context
-- Current git status: !\`git status -s\`
+- Current git status: !
+<0xC2><0xA0>`git status -s`
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -208,9 +209,11 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 
     await writeIfMissing(
       path.join(GLOBAL_CLAUDE, "commands", "morph-apply.md"),
-      `---\nargument-hint: [description] [file_path]\ndescription: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
+      `---\nargument-hint: [description] [file_path]
+description: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
 ## Context
-- Current git status: !\`git status -s\`
+- Current git status: !
+<0xC2><0xA0>`git status -s`
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -255,6 +258,62 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
   }
 
   console.log(pc.green("✔ Claude-Code Morph integration installed."));
+
+  // Dev Container NODE_PATH and libsecret patching
+  const DEVCONTAINER_DIR = path.join(process.cwd(), ".devcontainer");
+  const DEVCONTAINER_JSON_PATH = path.join(DEVCONTAINER_DIR, "devcontainer.json");
+  const DEVCONTAINER_DOCKERFILE_PATH = path.join(DEVCONTAINER_DIR, "Dockerfile");
+
+  if (exists(DEVCONTAINER_JSON_PATH)) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ans = (await rl.question(
+      "Dev Container detected. Offer to patch .devcontainer/devcontainer.json and create Dockerfile for full compatibility? (y/N) "
+    )).trim().toLowerCase();
+    rl.close();
+
+    if (ans === "y") {
+      let devcontainerConfig: any = {};
+      try {
+        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8"));
+      } catch (e) {
+        console.warn(pc.yellow(`Failed to read or parse ${DEVCONTAINER_JSON_PATH}: ${String(e)}`));
+      }
+
+      // Patch NODE_PATH
+      devcontainerConfig.remoteEnv ??= {};
+      const nodePathValue = "/usr/local/share/nvm/versions/node/current/lib/node_modules";
+      if (devcontainerConfig.remoteEnv.NODE_PATH !== nodePathValue) {
+        devcontainerConfig.remoteEnv.NODE_PATH = nodePathValue;
+        console.log(pc.green(`✔ Patched ${DEVCONTAINER_JSON_PATH} with NODE_PATH.`));
+      } else {
+        console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already contains correct NODE_PATH.`));
+      }
+      // Patch Dockerfile reference
+      if (!devcontainerConfig.build || devcontainerConfig.build.dockerfile !== "Dockerfile") {
+        devcontainerConfig.build = {
+          dockerfile: "Dockerfile"
+        };
+        console.log(pc.green(`✔ Patched ${DEVCONTAINER_JSON_PATH} to use Dockerfile.`));
+      } else {
+        console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already uses Dockerfile.`));
+      }
+
+      await fsp.writeFile(DEVCONTAINER_JSON_PATH, JSON.stringify(devcontainerConfig, null, 2), "utf8");
+
+      // Create Dockerfile
+      const dockerfileContent = `FROM mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye\n\n# Install system dependencies for keytar (libsecret)\nRUN apt-get update && apt-get install -y \
+    libsecret-1-dev \
+    python3-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*\n`;
+      if (!exists(DEVCONTAINER_DOCKERFILE_PATH)) {
+        await fsp.writeFile(DEVCONTAINER_DOCKERFILE_PATH, dockerfileContent, "utf8");
+        console.log(pc.green(`✔ Created ${DEVCONTAINER_DOCKERFILE_PATH} for keytar compatibility.`));
+      } else {
+        console.log(pc.gray(`${DEVCONTAINER_DOCKERFILE_PATH} already exists.`));
+      }
+    }
+  }
 }
 
 main().catch((e) => {
