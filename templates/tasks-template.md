@@ -1,4 +1,4 @@
-# Tasks: [FEATURE NAME]
+# Tasks: PreToolUse Interception for Morph Fast-Apply
 
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
@@ -43,52 +43,58 @@
 - Paths shown below assume single project - adjust based on plan.md structure
 
 ## Phase 3.1: Setup
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Install project dependencies (`npm install`)
+- [ ] T002 Build the project (`npm run build`)
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
-- [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-- [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-- [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
+- [ ] T003 [P] Implement contract test for `MorphEditInterceptor` - Successful Edit Application in `specs/002-reference-the-most/tests/test-morph-edit-interceptor.md`
+- [ ] T004 [P] Implement contract test for `MorphEditInterceptor` - Failed Edit Application (MorphLLM Failure) in `specs/002-reference-the-most/tests/test-morph-edit-interceptor.md`
+- [ ] T005 [P] Implement contract test for `MorphEditInterceptor` - File System Application Failure in `specs/002-reference-the-most/tests/test-morph-edit-interceptor.md`
+- [ ] T006 [P] Implement contract test for `PreToolUseHook` - Intercepts and Handles `write_file` Successfully in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`
+- [ ] T007 [P] Implement contract test for `PreToolUseHook` - Intercepts `write_file` but MorphLLM Fails in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`
+- [ ] T008 [P] Implement contract test for `PreToolUseHook` - Does Not Intercept Non-File Edit Tools in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`
+- [ ] T009 [P] Implement contract test for `PreToolUseHook` - Handles Invalid `toolArgs` for `write_file` in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`
+- [ ] T010 [P] Implement integration test for Successful MorphLLM Edit Application in `src/tests/integration/test_successful_morph_edit.ts`
+- [ ] T011 [P] Implement integration test for MorphLLM Failure and Claude Fallback in `src/tests/integration/test_morph_fallback.ts`
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T008 [P] User model in src/models/user.py
-- [ ] T009 [P] UserService CRUD in src/services/user_service.py
-- [ ] T010 [P] CLI --create-user in src/cli/user_commands.py
-- [ ] T011 POST /api/users endpoint
-- [ ] T012 GET /api/users/{id} endpoint
-- [ ] T013 Input validation
-- [ ] T014 Error handling and logging
+- [ ] T012 [P] Define `EditRequest` interface/class in `src/core/backend.ts`
+- [ ] T013 [P] Define `EditResult` interface/class in `src/core/backend.ts`
+- [ ] T014 Implement `MorphEditInterceptor` class in `src/core/backend.ts`
+- [ ] T015 Implement `PreToolUseHook` class in `src/hooks/morphApply.ts`
+- [ ] T016 Update `src/core/backend.ts` to support the interceptor's interaction with MorphLLM.
+- [ ] T017 Provide a main export point in `src/cli.ts` for Claude integration.
 
-## Phase 3.4: Integration
-- [ ] T015 Connect UserService to DB
-- [ ] T016 Auth middleware
-- [ ] T017 Request/response logging
-- [ ] T018 CORS and security headers
+
 
 ## Phase 3.5: Polish
-- [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
-- [ ] T020 Performance tests (<200ms)
-- [ ] T021 [P] Update docs/api.md
-- [ ] T022 Remove duplication
-- [ ] T023 Run manual-testing.md
+- [ ] T018 [P] Research specific performance metrics for `PreToolUse` interception and `MorphLLM FastApply`.
+- [ ] T019 [P] Determine if `llms.txt` format is required for library documentation.
+- [ ] T020 [P] Investigate requirements and best practices for structured logging.
+- [ ] T021 [P] Define the versioning strategy (MAJOR.MINOR.BUILD) for this feature.
+- [ ] T022 [P] Determine how BUILD increments will be handled.
+- [ ] T023 [P] Plan for handling breaking changes.
 
 ## Dependencies
-- Tests (T004-T007) before implementation (T008-T014)
-- T008 blocks T009, T015
-- T016 blocks T018
-- Implementation before polish (T019-T023)
+- Tests (T003-T011) before implementation (T012-T017)
+- T012, T013 (data models) block T014 (MorphEditInterceptor) and T015 (PreToolUseHook)
+- T014 (MorphEditInterceptor) blocks T015 (PreToolUseHook)
+- T015 (PreToolUseHook) blocks T016 (backend update) and T017 (export point)
+- Implementation (T012-T017) before polish (T018-T023)
 
 ## Parallel Example
 ```
-# Launch T004-T007 together:
-Task: "Contract test POST /api/users in tests/contract/test_users_post.py"
-Task: "Contract test GET /api/users/{id} in tests/contract/test_users_get.py"
-Task: "Integration test registration in tests/integration/test_registration.py"
-Task: "Integration test auth in tests/integration/test_auth.py"
+# Launch T003-T011 together (all test tasks are parallelizable):
+Task: "Implement contract test for `MorphEditInterceptor` - Successful Edit Application in `specs/002-reference-the-most/tests/test-morph-edit-interceptor.md`"
+Task: "Implement contract test for `MorphEditInterceptor` - Failed Edit Application (MorphLLM Failure) in `specs/002-reference-the-most/tests/test-morph-edit-interceptor.md`"
+Task: "Implement contract test for `MorphEditInterceptor` - File System Application Failure in `specs/002-reference-the-most/tests/test-morph-edit-interceptor.md`"
+Task: "Implement contract test for `PreToolUseHook` - Intercepts and Handles `write_file` Successfully in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`"
+Task: "Implement contract test for `PreToolUseHook` - Intercepts `write_file` but MorphLLM Fails in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`"
+Task: "Implement contract test for `PreToolUseHook` - Does Not Intercept Non-File Edit Tools in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`"
+Task: "Implement contract test for `PreToolUseHook` - Handles Invalid `toolArgs` for `write_file` in `specs/002-reference-the-most/tests/test-pre-tool-use-hook.md`"
+Task: "Implement integration test for Successful MorphLLM Edit Application in `src/tests/integration/test_successful_morph_edit.ts`"
+Task: "Implement integration test for MorphLLM Failure and Claude Fallback in `src/tests/integration/test_morph_fallback.ts`"
 ```
 
 ## Notes

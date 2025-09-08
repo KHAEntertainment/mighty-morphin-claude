@@ -29,7 +29,7 @@ export function loadConfig(): Config {
       account: parsed.account || '',
       apiBase: parsed.apiBase || 'https://api.morphllm.com',
     };
-  } catch (err) {
+  } catch {
     return {
       account: '',
       apiBase: 'https://api.morphllm.com',

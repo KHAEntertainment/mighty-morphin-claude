@@ -5,34 +5,36 @@ import process from "node:process";
 import pc from "picocolors";
 import OpenAI from "openai";
 /**
- * Retrieve the Morph API key from the environment or the OS keychain.
+ * Retrieves the Morph LLM API key if available.
  *
- * Attempts to return the value of MORPH_LLM_API_KEY if set; otherwise tries to
- * load the system keychain via `keytar` and returns the stored password for the
- * "morphllm" service and the current OS user. Returns `undefined` if no key is
- * found or if keychain access/import fails.
- *
- * @return {Promise<string|undefined>} The API key string, or `undefined` when not available.
+ * First returns the value of the MORPH_LLM_API_KEY environment variable if set.
+ * If not present, attempts to dynamically import the system keyring (keytar) and
+ * the OS module to look up a stored password for service "morphllm" under the
+ * current OS username. Returns the found key or `undefined` if none is available
+ * or if any lookup/import error occurs.
  */
 async function getApiKey() {
-    if (process.env.MORPH_LLM_API_KEY) return process.env.MORPH_LLM_API_KEY;
-    if (process.env.MORPH_API_KEY) return process.env.MORPH_API_KEY;
+    if (process.env.MORPH_LLM_API_KEY)
+        return process.env.MORPH_LLM_API_KEY;
+    if (process.env.MORPH_API_KEY)
+        return process.env.MORPH_API_KEY;
     try {
         const keytar = await import("keytar");
         const os = await import("node:os");
         const user = os.userInfo().username;
-        return (await keytar.default.getPassword("morphllm", user)) ?? undefined;
-    } catch {
+        return await keytar.default.getPassword("morphllm", user) ?? undefined;
+    }
+    catch {
         return undefined;
     }
 }
 /**
- * Read all data from standard input and return it as a UTF-8 string.
+ * Reads all data from standard input and returns it as a UTF-8 string.
  *
- * Resolves with the complete concatenated stdin content once the stream ends.
- * Rejects if the stdin stream emits an error or if an exception occurs while setting up listeners.
+ * The returned promise resolves with the full accumulated stdin content when the stream ends,
+ * and rejects if the stdin stream emits an "error".
  *
- * @return {Promise<string>} Promise that resolves to the full stdin content.
+ * @returns A promise that resolves to the complete stdin content as a string.
  */
 async function readStdin() {
     return await new Promise((resolve, reject) => {
@@ -49,40 +51,41 @@ async function readStdin() {
     });
 }
 /**
- * Extracts and returns the substring located between two tag markers in the given text.
+ * Extracts and returns the substring found between two tag markers.
  *
- * If both startTag and endTag are found and endTag occurs after startTag, returns the trimmed content between them.
- * Otherwise returns the entire input text trimmed.
+ * If both `startTag` and `endTag` are present in `text` and `endTag` occurs after `startTag`,
+ * the function returns the trimmed text between them. Otherwise it returns `text.trim()`.
  *
- * @param {string} text - Input string to search.
- * @param {string} [startTag="<merged>"] - Opening tag to locate the start of the extraction.
- * @param {string} [endTag="</merged>"] - Closing tag to locate the end of the extraction.
- * @return {string} The trimmed extracted content, or the trimmed original text if tags are not found in order.
+ * @param text - The input string to search.
+ * @param startTag - Opening marker to locate the start of the extracted region (default: `"<merged>"`).
+ * @param endTag - Closing marker to locate the end of the extracted region (default: `"</merged>"`).
+ * @returns The trimmed content between the tags, or the trimmed original `text` if tags are not found in order.
  */
 function extractBetween(text, startTag = "<merged>", endTag = "</merged>") {
     const s = text.indexOf(startTag);
-    const e = text.indexOf(endTag, s + startTag.length);
+    const e = text.indexOf(endTag);
     if (s >= 0 && e > s)
         return text.slice(s + startTag.length, e).trim();
     return text.trim();
 }
 /**
- * Orchestrates the Morph "apply" hook: reads hook JSON from stdin, requests a merge from Morph, and writes the merged file back.
+ * Read hook input from stdin, merge provided update into a target file using Morph LLM, and write the merged result back to disk.
  *
- * This function:
- * - Reads JSON input from stdin and extracts tool_name, tool_input, and tool_response.
- * - Resolves the target file path (from tool_response.filePath or tool_input.file_path) and the update content (tool_input.content).
- * - If the path or content is missing, logs a skip message and exits with code 0.
- * - Reads the original file contents from disk.
- * - Obtains an API key via getApiKey() (or from MORPH_LLM_API_KEY) and calls Morph's chat/completions API (model "morph-v3-large") with a prompt that asks for the merged file wrapped in <merged>...</merged>.
- * - Extracts the merged content from the API response and overwrites the target file with it.
- * - Logs success and exits with code 0, or logs an error and exits with code 1 on failures.
+ * The function:
+ * - Parses JSON from stdin to locate a target file path (from `tool_response.filePath` or `tool_input.file_path`) and an update payload (`tool_input.content`).
+ * - Reads the existing file contents, calls the Morph API (model `morph-v3-large`) to merge the `<update>` into the `<code>`, and expects the model to return the merged file wrapped in `<merged>` tags.
+ * - Extracts the merged content and overwrites the target file with it.
  *
  * Side effects:
- * - Reads stdin.
- * - Reads and writes files on disk.
- * - Calls external network API (Morph via OpenAI client).
- * - Terminates the process (calls process.exit with 0 or 1).
+ * - Reads stdin and the target file from disk.
+ * - Writes the merged content to the target file.
+ * - Exits the process with codes:
+ *   - 0 for success or benign skips (missing input/file_path/content),
+ *   - 1 for errors (JSON parse failure, file read/write failures, missing API key, empty API response, or API/processing errors).
+ *
+ * Behavior notes:
+ * - If no stdin input or required fields are missing, the function logs a message and exits with code 0 (no-op).
+ * - If the Morph API response is empty or the merge fails, the function logs an error and exits with code 1.
  */
 async function main() {
     const raw = await readStdin();
@@ -152,14 +155,12 @@ async function main() {
         if (!txt)
             throw new Error("Empty response from Morph Apply");
         const merged = extractBetween(txt, "<merged>", "</merged>");
-        if (!merged || merged.trim() === "") {
-            console.warn(pc.yellow(`[morph] Warning: Empty merged content for ${path.relative(process.cwd(), filePath)}. Original file preserved.`));
-            process.exit(0); // Exit with 0 to indicate non-blocking success, as per user's preference for "skip writing and exit 0"
-        } else {
-            await fs.writeFile(filePath, merged, "utf8");
-            console.log(pc.green(`[morph] Applied merge to ${path.relative(process.cwd(), filePath)}`));
-            process.exit(0);
+        if (!merged || merged.trim().length < 10) {
+            throw new Error("Refusing to overwrite with empty/near-empty merge.");
         }
+        await fs.writeFile(filePath, merged, "utf8");
+        console.log(pc.green(`[morph] Applied merge to ${path.relative(process.cwd(), filePath)}`));
+        process.exit(0);
     }
     catch (e) {
         console.error(pc.red(`[morph] Apply failed: ${e?.message ?? String(e)}`));

@@ -1,7 +1,64 @@
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
 import { loadConfig } from './config.js';
 import { getApiKey } from './keychain.js';
+
+/**
+ * Intercepts and applies edit requests using the MorphLLM backend.
+ */
+export class MorphEditInterceptor {
+  /**
+   * Creates an instance of MorphEditInterceptor.
+   * @param account The account name for the MorphLLM API.
+   */
+  constructor(private account: string) {}
+
+  /**
+   * Intercepts an edit request and applies it using the MorphLLM backend.
+   * @param request The edit request to intercept and apply.
+   * @returns A promise that resolves to an EditResult indicating success or failure.
+   */
+  async interceptAndApply(request: EditRequest): Promise<EditResult> {
+    try {
+      const backend = await createBackend(this.account);
+      const result = await backend.apply(request.goal, request.files, false);
+
+      // Assuming result.edits contains the modified files and result.logs contains diffs
+      const modifiedFiles = result.edits.map(edit => ({
+        path: edit.path,
+        content: edit.patch // Assuming patch contains the full content after applying
+      }));
+
+      return {
+        success: true,
+        modifiedFiles: modifiedFiles,
+        diffs: [result.logs] // Assuming logs can be treated as diffs for now
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+}
+
+/**
+ * Represents the result of an edit operation.
+ */
+export interface EditResult {
+  success: boolean;
+  modifiedFiles?: { path: string; content: string }[];
+  diffs?: string[];
+  error?: string;
+}
+
+/**
+ * Represents a request to perform an edit operation.
+ */
+export interface EditRequest {
+  goal: string;
+  files: FilePayload[];
+}
 
 export interface FilePayload {
   path: string;

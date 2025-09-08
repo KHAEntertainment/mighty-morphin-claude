@@ -17,7 +17,7 @@ export default function precommitCommand(program: Command): void {
       let staged: string;
       try {
         staged = execSync('git diff --cached --name-only', { encoding: 'utf8' });
-      } catch (err) {
+      } catch {
         console.error('Failed to list staged files. Is this a Git repository?');
         process.exit(1);
       }
@@ -60,7 +60,7 @@ export default function precommitCommand(program: Command): void {
         }
         // Re‑add files to staging in case they changed
         execSync('git add -A');
-      } catch (err) {
+      } catch {
         console.error('Morph precommit failed:', err);
         process.exit(1);
       }

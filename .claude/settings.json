@@ -10,6 +10,16 @@
             "timeout": 60
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/workspaces/mighty-morphin-claude/.claude/hooks/morphApply.js\"",
+            "timeout": 60
+          }
+        ]
       }
     ]
   }

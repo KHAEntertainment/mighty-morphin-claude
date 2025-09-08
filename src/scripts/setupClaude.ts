@@ -61,8 +61,8 @@ function exists(p: string) { try { fs.accessSync(p); return true; } catch { retu
  * @param destPath - Filesystem path to the settings JSON file to update (created if missing).
  * @param add - Object that may contain `hooks.PostToolUse` (an array of hook definitions) to merge.
  */
-async function deepMergeSettings(destPath: string, add: any) {
-  let base: any = {};
+async function deepMergeSettings(destPath: string, add: { hooks?: { PostToolUse?: unknown[] } }) {
+  let base: { hooks?: { PostToolUse?: unknown[] } } = {};
   if (exists(destPath)) {
     try { base = JSON.parse(await fsp.readFile(destPath, "utf8")); } 
     catch { base = {}; }
@@ -71,8 +71,8 @@ async function deepMergeSettings(destPath: string, add: any) {
   base.hooks.PostToolUse ??= [];
 
   const incoming = add?.hooks?.PostToolUse ?? [];
-  const key = (h: any) => JSON.stringify(h?.hooks ?? []) + (h?.matcher ?? "");
-  const current = new Map<string, any>(base.hooks.PostToolUse.map((h: any) => [key(h), h]));
+  const key = (h: unknown) => JSON.stringify((h as { hooks?: unknown[] })?.hooks ?? []) + ((h as { matcher?: string })?.matcher ?? "");
+  const current = new Map<string, unknown>(base.hooks.PostToolUse.map((h: unknown) => [key(h), h]));
   for (const h of incoming) current.set(key(h), h);
 
   base.hooks.PostToolUse = Array.from(current.values());
@@ -143,12 +143,12 @@ async function main() {
         hooks: [
           {
             type: "command",
-            command: `node "${projectHookPath}"`,
+            command: `node "${projectHookPath}"`, // No need to escape backticks here
             timeout: 60
           }
         ]
       }
-    ] }
+    ] } 
   };
 
   const globalHook = {
@@ -158,12 +158,12 @@ async function main() {
         hooks: [
           {
             type: "command",
-            command: `node "${globalHookPath}"`,
+            command: `node "${globalHookPath}"`, // No need to escape backticks here
             timeout: 60
           }
         ]
       }
-    ] }
+    ] } 
   };
   if (scope === "project" || scope === "both") {
     await ensureDir(PROJECT_CLAUDE);
@@ -173,10 +173,15 @@ async function main() {
 
     await writeIfMissing(
       path.join(PROJECT_CLAUDE, "commands", "morph-apply.md"),
-      `---\nargument-hint: [description] [file_path]\ndescription: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
+      `---
+argument-hint: [description] [file_path]
+description: Apply Morph Fast-Apply to merge a described change into a file.
+allowed-tools: Bash(node:*)
+---
+
 ## Context
 - Current git status: !
-<0xC2><0xA0>`git status -s`
+ \`git status -s\`
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -188,13 +193,15 @@ File: $2
 
     await writeIfMissing(
       path.join(PROJECT_CLAUDE, "agents", "morph-agent.md"),
-      `---\nname: morph-agent
-description: PROACTIVELY use for structural edits. After any Edit/Write/MultiEdit, call /morph-apply with a succinct description and target file.
+      `---
+name: morph-agent
+description: PROACTIVELY use for structural edits. After any Edit/Write/MultiEdit, call /morph-apply with a succinct description and file_path.
 tools: Edit, Write, MultiEdit, Bash
----\n
+---
+
 You are a specialist for reliable merges. When you produce code edits that should be merged safely,
-immediately trigger \
-/morph-apply \"<short description>\" <file_path>\
+immediately trigger 
+/morph-apply "<short description>" <file_path>
  so Morph performs the merge.
 Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 `
@@ -209,11 +216,15 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 
     await writeIfMissing(
       path.join(GLOBAL_CLAUDE, "commands", "morph-apply.md"),
-      `---\nargument-hint: [description] [file_path]
-description: Apply Morph Fast-Apply to merge a described change into a file.\nallowed-tools: Bash(node:*)\n---\n
+      `---
+argument-hint: [description] [file_path]
+description: Apply Morph Fast-Apply to merge a described change into a file.
+allowed-tools: Bash(node:*)
+---
+
 ## Context
 - Current git status: !
-<0xC2><0xA0>`git status -s`
+ \`git status -s\`
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -225,13 +236,15 @@ File: $2
 
     await writeIfMissing(
       path.join(GLOBAL_CLAUDE, "agents", "morph-agent.md"),
-      `---\nname: morph-agent
-description: PROACTIVELY use for structural edits. After any Edit/Write/MultiEdit, call /morph-apply with a succinct description and target file.
+      `---
+name: morph-agent
+description: PROACTIVELY use for structural edits. After any Edit/Write/MultiEdit, call /morph-apply with a succinct description and file_path.
 tools: Edit, Write, MultiEdit, Bash
----\n
+---
+
 You are a specialist for reliable merges. When you produce code edits that should be merged safely,
-immediately trigger \
-/morph-apply \"<short description>\" <file_path>\
+immediately trigger 
+/morph-apply "<short description>" <file_path>
  so Morph performs the merge.
 Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
 `
@@ -272,10 +285,10 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
     rl.close();
 
     if (ans === "y") {
-      let devcontainerConfig: any = {};
+      let devcontainerConfig: Record<string, unknown> = {};
       try {
-        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8"));
-      } catch (e) {
+        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8")) as Record<string, unknown>;
+      } catch (e: unknown) {
         console.warn(pc.yellow(`Failed to read or parse ${DEVCONTAINER_JSON_PATH}: ${String(e)}`));
       }
 
@@ -289,7 +302,7 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
         console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already contains correct NODE_PATH.`));
       }
       // Patch Dockerfile reference
-      if (!devcontainerConfig.build || devcontainerConfig.build.dockerfile !== "Dockerfile") {
+      if (!devcontainerConfig.build || (devcontainerConfig.build as Record<string, unknown>).dockerfile !== "Dockerfile") {
         devcontainerConfig.build = {
           dockerfile: "Dockerfile"
         };
@@ -301,7 +314,10 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
       await fsp.writeFile(DEVCONTAINER_JSON_PATH, JSON.stringify(devcontainerConfig, null, 2), "utf8");
 
       // Create Dockerfile
-      const dockerfileContent = `FROM mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye\n\n# Install system dependencies for keytar (libsecret)\nRUN apt-get update && apt-get install -y \
+      const dockerfileContent = `FROM mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye
+
+# Install system dependencies for keytar (libsecret)
+RUN apt-get update && apt-get install -y \
     libsecret-1-dev \
     python3-dev \
     build-essential \
@@ -316,7 +332,7 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
   }
 }
 
-main().catch((e) => {
+main().catch((e: unknown) => {
   console.error(pc.red(String(e)));
   process.exit(1);
 });

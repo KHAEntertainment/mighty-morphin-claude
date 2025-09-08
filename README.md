@@ -55,7 +55,7 @@ Add the following to your `.devcontainer/devcontainer.json` file:
 
 ```json
 "remoteEnv": {
-  "NODE_PATH": "/home/node/.nvm/versions/node/v22.19.0/lib/node_modules"
+  "NODE_PATH": "/home/node/.nvm/versions/node/current/lib/node_modules"
 }
 ```
 
