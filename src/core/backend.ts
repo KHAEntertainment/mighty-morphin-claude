@@ -33,7 +33,7 @@ export class MorphEditInterceptor {
         modifiedFiles: modifiedFiles,
         diffs: [result.logs] // Assuming logs can be treated as diffs for now
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message

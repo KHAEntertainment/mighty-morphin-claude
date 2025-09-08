@@ -1,2 +1,2 @@
-export { PreToolUseHook } from './hooks/morphApply';
-export { MorphEditInterceptor } from './core/backend';
+export { PreToolUseHook } from './hooks/morphApply.js';
+export { MorphEditInterceptor } from './core/backend.js';

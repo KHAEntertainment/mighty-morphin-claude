@@ -120,7 +120,7 @@ async function main() {
     process.exit(0);
   }
 
-  const hookDist = path.resolve("dist/hooks/morphApply.js");
+  const hookDist = path.resolve("dist/hook-entrypoint.js");
   if (!exists(hookDist)) {
     console.log(pc.cyan ? pc.cyan("Building project...") : "Building project...");
     const { spawnSync } = await import("node:child_process");
@@ -278,11 +278,14 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
   const DEVCONTAINER_DOCKERFILE_PATH = path.join(DEVCONTAINER_DIR, "Dockerfile");
 
   if (exists(DEVCONTAINER_JSON_PATH)) {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ans = (await rl.question(
-      "Dev Container detected. Offer to patch .devcontainer/devcontainer.json and create Dockerfile for full compatibility? (y/N) "
-    )).trim().toLowerCase();
-    rl.close();
+    let ans = "n"; // Default to 'n' for non-interactive
+    if (!process.argv.includes("--noninteractive")) {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      ans = (await rl.question(
+        "Dev Container detected. Offer to patch .devcontainer/devcontainer.json and create Dockerfile for full compatibility? (y/N) "
+      )).trim().toLowerCase();
+      rl.close();
+    }
 
     if (ans === "y") {
       let devcontainerConfig: Record<string, unknown> = {};
@@ -295,8 +298,8 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
       // Patch NODE_PATH
       devcontainerConfig.remoteEnv ??= {};
       const nodePathValue = "/usr/local/share/nvm/versions/node/current/lib/node_modules";
-      if (devcontainerConfig.remoteEnv.NODE_PATH !== nodePathValue) {
-        devcontainerConfig.remoteEnv.NODE_PATH = nodePathValue;
+      if ((devcontainerConfig.remoteEnv as Record<string, string>).NODE_PATH !== nodePathValue) {
+        (devcontainerConfig.remoteEnv as Record<string, string>).NODE_PATH = nodePathValue;
         console.log(pc.green(`✔ Patched ${DEVCONTAINER_JSON_PATH} with NODE_PATH.`));
       } else {
         console.log(pc.gray(`${DEVCONTAINER_JSON_PATH} already contains correct NODE_PATH.`));
