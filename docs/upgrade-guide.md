@@ -215,7 +215,7 @@ Copy dist/hooks/morphApply.js to ~/.claude/hooks/morphApply.js, then deep-merge:
         "hooks": [
           {
             "type": "command",
-            "command": "node $HOME/.claude/hooks/morphApply.js",
+            "command": "node $HOME/.claude/hooks/morphApply.mjs",
             "timeout": 60
           }
         ]
