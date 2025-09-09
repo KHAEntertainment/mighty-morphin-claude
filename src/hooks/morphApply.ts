@@ -56,7 +56,7 @@ export class PreToolUseHook {
         // For now, let's assume toolInput.files is an array of { path, content }
         if (toolInput.files && Array.isArray(toolInput.files)) {
           files = toolInput.files.map((f: any) => ({ path: f.path, content: f.content }));
-        } else if (toolInput.file_path && toolInput.content) {
+        } else if (toolInput.file_path && toolInput.content !== undefined) {
           // Handle single file edit from Edit tool
           files.push({ path: toolInput.file_path, content: toolInput.content });
         }
