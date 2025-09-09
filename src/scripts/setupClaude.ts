@@ -4,11 +4,32 @@ import path from "node:path";
 import os from "node:os";
 import readline from "node:readline/promises";
 import pc from "picocolors";
+import stripJsonComments from 'strip-json-comments';
 
 type Scope = "project" | "global" | "both";
 
 const PROJECT_CLAUDE = path.resolve(".claude");
 const GLOBAL_CLAUDE = path.join(os.homedir(), ".claude");
+
+function printHeader() {
+  const line = pc.green("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("\n" + line);
+  console.log(pc.bold(pc.green(" Mighty‑Morphin‑Claude • Claude‑Code Integration")));
+  console.log(line);
+  console.log(pc.green(" Mighty‑Morphin‑Claude is part of The Hive ecosystem."));
+  console.log(pc.green(" Learn more: https://hivecli.com"));
+  console.log(pc.green(" GitHub:   https://github.com/KHAEntertainment/mighty-morphin-claude"));
+  console.log(line + "\n");
+}
+
+async function promptYesNo(question: string, def: boolean = false): Promise<boolean> {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const suffix = def ? " (Y/n) " : " (y/N) ";
+  const ans = (await rl.question(question + suffix)).trim().toLowerCase();
+  rl.close();
+  if (!ans) return def;
+  return ans === "y" || ans === "yes";
+}
 
 /**
  * Prompt the user (unless running noninteractive) to choose the installation scope for the integration.
@@ -24,9 +45,14 @@ const GLOBAL_CLAUDE = path.join(os.homedir(), ".claude");
 async function promptScope(): Promise<Scope> {
   if (process.argv.includes("--noninteractive")) return "project";
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const ans = (await rl.question(
-    "Install Morph Claude-Code integration to: [1] Project (.claude), [2] Global (~/.claude), [3] Both? "
-  )).trim();
+  const prompt = [
+    pc.bold("Install Mighty‑Morphin‑Claude hooks to:"),
+    "  1) Project (.claude)",
+    "  2) Global   (~/.claude)",
+    "  3) Both",
+    "Choose [1/2/3]: ",
+  ].join("\n");
+  const ans = (await rl.question(prompt)).trim();
   rl.close();
   if (ans === "2") return "global";
   if (ans === "3") return "both";
@@ -64,7 +90,10 @@ function exists(p: string) { try { fs.accessSync(p); return true; } catch { retu
 async function deepMergeSettings(destPath: string, add: { hooks?: { PostToolUse?: unknown[] } }) {
   let base: { hooks?: { PostToolUse?: unknown[] } } = {};
   if (exists(destPath)) {
-    try { base = JSON.parse(await fsp.readFile(destPath, "utf8")); } 
+    try { 
+      const fileContent = await fsp.readFile(destPath, "utf8");
+      base = JSON.parse(stripJsonComments(fileContent)) as Record<string, unknown>; // Modified this line
+    } 
     catch { base = {}; }
   }
   base.hooks ??= {};
@@ -115,14 +144,64 @@ async function writeIfMissing(p: string, content: string) {
  * @returns A promise that resolves when installation completes.
  */
 async function main() {
+  printHeader();
   if (process.argv.includes("--uninstall")) {
-    console.log(pc.yellow("Uninstall not implemented in this minimal script."));
+    // Best-effort uninstall: clean both project and global scopes.
+    const PROJECT_SETTINGS = path.join(PROJECT_CLAUDE, "settings.json");
+    const GLOBAL_SETTINGS = path.join(GLOBAL_CLAUDE, "settings.json");
+
+    // Helper: remove hook entries pointing to morphApply.js from a settings file
+    const removeHookEntries = async (settingsPath: string, expectedCommandPaths: string[]) => {
+      if (!exists(settingsPath)) return;
+      try {
+        const fileContent = await fsp.readFile(settingsPath, "utf8");
+        const json = JSON.parse(stripJsonComments(fileContent)) as Record<string, any>;
+        const hooks = (json?.hooks ?? {}) as { PostToolUse?: any[] };
+        const current = Array.isArray(hooks.PostToolUse) ? hooks.PostToolUse : [];
+        const isOurEntry = (entry: any) => {
+          const matcher: string | undefined = entry?.matcher;
+          const subhooks: any[] = Array.isArray(entry?.hooks) ? entry.hooks : [];
+          const hasCommand = subhooks.some((h) => typeof h?.command === "string" && (
+            expectedCommandPaths.includes(h.command) || h.command.includes("/hooks/morphApply.js")
+          ));
+          return (matcher === "Edit|Write|MultiEdit" && hasCommand) || hasCommand;
+        };
+        const filtered = current.filter((e) => !isOurEntry(e));
+        json.hooks ??= {};
+        if (filtered.length > 0) json.hooks.PostToolUse = filtered; else delete json.hooks.PostToolUse;
+        await fsp.writeFile(settingsPath, JSON.stringify(json, null, 2), "utf8");
+      } catch (e) {
+        console.warn(pc.yellow(`Uninstall: failed to update ${settingsPath}: ${String(e)}`));
+      }
+    };
+
+    const tryUnlink = async (p: string) => { try { if (exists(p)) await fsp.unlink(p); } catch (e) { /* ignore */ } };
+
+    // Project scope cleanup
+    const projectHookPath = path.join(PROJECT_CLAUDE, "hooks", "morphApply.js");
+    const projectCmdPath  = path.join(PROJECT_CLAUDE, "commands", "morph-apply.md");
+    const projectAgentPath= path.join(PROJECT_CLAUDE, "agents", "morph-agent.md");
+    await removeHookEntries(PROJECT_SETTINGS, [ `node "${projectHookPath}"`, `node '${projectHookPath}'`, projectHookPath ]);
+    await tryUnlink(projectHookPath);
+    await tryUnlink(projectCmdPath);
+    await tryUnlink(projectAgentPath);
+
+    // Global scope cleanup
+    const globalHookPath = path.join(GLOBAL_CLAUDE, "hooks", "morphApply.js");
+    const globalCmdPath  = path.join(GLOBAL_CLAUDE, "commands", "morph-apply.md");
+    const globalAgentPath= path.join(GLOBAL_CLAUDE, "agents", "morph-agent.md");
+    await removeHookEntries(GLOBAL_SETTINGS, [ `node "${globalHookPath}"`, `node '${globalHookPath}'`, globalHookPath ]);
+    await tryUnlink(globalHookPath);
+    await tryUnlink(globalCmdPath);
+    await tryUnlink(globalAgentPath);
+
+    console.log(pc.green("✔ Mighty‑Morphin‑Claude integration uninstalled (best‑effort)."));
     process.exit(0);
   }
 
   const hookDist = path.resolve("dist/hook-entrypoint.js");
   if (!exists(hookDist)) {
-    console.log(pc.cyan ? pc.cyan("Building project...") : "Building project...");
+    console.log(pc.green("⏳ Building Mighty‑Morphin‑Claude…"));
     const { spawnSync } = await import("node:child_process");
     const res = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"], { stdio: "inherit" });
     if (res.status !== 0) process.exit(res.status ?? 1);
@@ -143,7 +222,7 @@ async function main() {
         hooks: [
           {
             type: "command",
-            command: `node "${projectHookPath}"`, // No need to escape backticks here
+            command: `node "${projectHookPath}"`,
             timeout: 60
           }
         ]
@@ -158,7 +237,7 @@ async function main() {
         hooks: [
           {
             type: "command",
-            command: `node "${globalHookPath}"`, // No need to escape backticks here
+            command: `node "${globalHookPath}"`,
             timeout: 60
           }
         ]
@@ -180,8 +259,9 @@ allowed-tools: Bash(node:*)
 ---
 
 ## Context
-- Current git status: !
- \`git status -s\`
+- Current git status: ! 
+ 
+  git status -s
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -223,8 +303,9 @@ allowed-tools: Bash(node:*)
 ---
 
 ## Context
-- Current git status: !
- \`git status -s\`
+- Current git status: ! 
+ 
+  git status -s
 
 ## Your task
 Use Morph Fast-Apply to merge the described change into the target file.
@@ -251,38 +332,80 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
     );
   }
 
-  if (!process.env.MORPH_LLM_API_KEY) {
-    try {
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      const ans = (await rl.question("No MORPH_LLM_API_KEY env detected. Store one securely now? (y/N) ")).trim().toLowerCase();
-      if (ans === "y") {
-        const apiKey = await rl.question("Enter Morph API key (input hidden not supported here): ");
-        rl.close();
-        const keytar = await import("keytar");
-        const user = os.userInfo().username;
-        await keytar.default.setPassword("morphllm", user, apiKey);
-        console.log(pc.green("Stored key in OS keychain via keytar."));
-      } else {
-        rl.close();
-      }
-    } catch (e) {
-      console.warn(pc.yellow(`Skipping secure store: ${String(e)}`));
-    }
-  }
-
-  console.log(pc.green("✔ Claude-Code Morph integration installed."));
-
-  // Dev Container NODE_PATH and libsecret patching
+  // API key configuration and fallback handling
   const DEVCONTAINER_DIR = path.join(process.cwd(), ".devcontainer");
   const DEVCONTAINER_JSON_PATH = path.join(DEVCONTAINER_DIR, "devcontainer.json");
   const DEVCONTAINER_DOCKERFILE_PATH = path.join(DEVCONTAINER_DIR, "Dockerfile");
 
+  if (!process.env.MORPH_LLM_API_KEY) {
+    try {
+      const proceed = process.argv.includes("--noninteractive")
+        ? false
+        : await promptYesNo(pc.bold("No MORPH_LLM_API_KEY found. Store one securely in the OS keychain now?"));
+      if (proceed) {
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const apiKey = await rl.question(pc.bold("Enter Morph API key") + pc.dim(" (input not hidden here)") + ": ");
+        rl.close();
+        try {
+          const keytar = await import("keytar");
+          const user = os.userInfo().username;
+          await keytar.default.setPassword("morphllm", user, apiKey);
+          console.log(pc.green("✔ Stored key in OS keychain via keytar."));
+        } catch (e: unknown) {
+          const msg = String(e || "");
+          console.log(pc.yellow("⚠️  Secure key storage failed."));
+          console.log(pc.dim(msg));
+
+          const inDevContainer = exists(DEVCONTAINER_JSON_PATH) || process.env.CODESPACES === 'true' || process.env.DEVCONTAINER === 'true';
+          if (inDevContainer) {
+            // Offer to write the key into devcontainer.json (containerEnv)
+            const useDevcontainer = await promptYesNo(
+              pc.bold("Add MORPH_LLM_API_KEY to .devcontainer/devcontainer.json (containerEnv) so it persists in this container?"),
+              true
+            );
+            if (useDevcontainer) {
+              try {
+                let devcontainerConfig: Record<string, any> = {};
+                if (exists(DEVCONTAINER_JSON_PATH)) {
+                  const fileContent = await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8");
+                  devcontainerConfig = JSON.parse(stripJsonComments(fileContent));
+                } else {
+                  await ensureDir(DEVCONTAINER_DIR);
+                }
+                devcontainerConfig.containerEnv ??= {};
+                devcontainerConfig.containerEnv.MORPH_LLM_API_KEY = apiKey;
+                await fsp.writeFile(DEVCONTAINER_JSON_PATH, JSON.stringify(devcontainerConfig, null, 2), "utf8");
+                console.log(pc.green(`✔ Added MORPH_LLM_API_KEY to ${DEVCONTAINER_JSON_PATH} (containerEnv).`));
+                console.log(pc.gray("Rebuild the container to apply environment changes."));
+              } catch (err) {
+                console.log(pc.red("✖ Failed to update devcontainer.json."));
+                console.log(pc.dim(String(err)));
+              }
+            } else {
+              console.log(pc.yellow("Skipping devcontainer env configuration."));
+            }
+          } else {
+            console.log(pc.yellow("Tip: set MORPH_LLM_API_KEY in your shell or CI environment."));
+            console.log(pc.dim("Example: export MORPH_LLM_API_KEY=sk-..."));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(pc.yellow(`Key setup skipped: ${String(e)}`));
+    }
+  } else {
+    console.log(pc.gray("MORPH_LLM_API_KEY detected in environment; skipping keychain setup."));
+  }
+
+  console.log(pc.green("\n✔ Mighty‑Morphin‑Claude integration installed."));
+
+  // Dev Container NODE_PATH and libsecret patching
   if (exists(DEVCONTAINER_JSON_PATH)) {
     let ans = "n"; // Default to 'n' for non-interactive
     if (!process.argv.includes("--noninteractive")) {
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       ans = (await rl.question(
-        "Dev Container detected. Offer to patch .devcontainer/devcontainer.json and create Dockerfile for full compatibility? (y/N) "
+        pc.bold("Dev Container detected. Patch settings for compatibility (NODE_PATH, Dockerfile)?") + " (y/N) "
       )).trim().toLowerCase();
       rl.close();
     }
@@ -290,7 +413,8 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
     if (ans === "y") {
       let devcontainerConfig: Record<string, unknown> = {};
       try {
-        devcontainerConfig = JSON.parse(await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8")) as Record<string, unknown>;
+        const fileContent = await fsp.readFile(DEVCONTAINER_JSON_PATH, "utf8");
+        devcontainerConfig = JSON.parse(stripJsonComments(fileContent)) as Record<string, unknown>; // Modified this line
       } catch (e: unknown) {
         console.warn(pc.yellow(`Failed to read or parse ${DEVCONTAINER_JSON_PATH}: ${String(e)}`));
       }
@@ -320,11 +444,12 @@ Keep diffs surgical; preserve imports, identifiers, formatting, and comments.
       const dockerfileContent = `FROM mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye
 
 # Install system dependencies for keytar (libsecret)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libsecret-1-dev \
     python3-dev \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*\n`;
+    && rm -rf /var/lib/apt/lists/*
+`;
       if (!exists(DEVCONTAINER_DOCKERFILE_PATH)) {
         await fsp.writeFile(DEVCONTAINER_DOCKERFILE_PATH, dockerfileContent, "utf8");
         console.log(pc.green(`✔ Created ${DEVCONTAINER_DOCKERFILE_PATH} for keytar compatibility.`));
