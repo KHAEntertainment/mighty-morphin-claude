@@ -1,7 +1,7 @@
 import process from "node:process";
 import pc from "picocolors";
-import { loadConfig } from './core/config.js'; // Import loadConfig
-import { PreToolUseHook } from './hooks/morphApply.js'; // Import PreToolUseHook
+import { loadConfig } from '../../dist/core/config.js'; // Import loadConfig from built output
+import { PreToolUseHook } from '../../dist/hooks/morphApply.js'; // Import PreToolUseHook from built output
 /**
  * Retrieves the Morph LLM API key if available.
  *
