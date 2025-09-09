@@ -7,7 +7,7 @@ Represents the intercepted edit request from Claude, containing the necessary in
 
 **Fields:**
 - `goal`: `string` - A description of the user's intent or the overall goal of the edit (e.g., "Refactor function `foo` to use `bar`").
-- `targetFiles`: `Array<string>` - A list of absolute file paths that are intended to be modified by the edit request.
+- `targetFiles`: `Array<string>` - A list of repository-relative file paths (normalized) that are intended to be modified by the edit request.
 - `originalContent`: `Map<string, string>` - A map where keys are file paths and values are the original content of those files before the edit. This is crucial for generating diffs or for rollback purposes.
 - `editOperations`: `Array<EditOperation>` - A detailed list of specific edit operations (e.g., insertions, deletions, replacements) that Claude intends to perform. (Further refinement of `EditOperation` structure may be needed during implementation).
 
