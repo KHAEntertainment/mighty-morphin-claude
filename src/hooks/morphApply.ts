@@ -43,9 +43,9 @@ export class PreToolUseHook {
       }
 
       let files: FilePayload[] = [];
-      if (toolName === "write_file" && content) {
+      if (toolName === "write_file" && content !== undefined) {
         files.push({ path: filePath, content: content });
-      } else if (toolName === "replace" && oldString && newString) {
+      } else if (toolName === "replace" && oldString !== undefined && newString !== undefined) {
         // For replace, we need the original content to create a proper diff/patch
         // For now, we'll just pass the new content as the "target" content for MorphLLM
         // A more robust solution would involve reading the original file content here.
