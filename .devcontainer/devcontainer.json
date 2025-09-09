@@ -15,5 +15,8 @@
       ]
     }
   },
-  "postCreateCommand": "npm install"
+  "postCreateCommand": "bash -lc 'test -f package-lock.json && npm ci || npm install'",
+  "remoteEnv": {
+    "NODE_PATH": "/usr/local/share/nvm/versions/node/current/lib/node_modules"
+  }
 }
