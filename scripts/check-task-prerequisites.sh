@@ -2,7 +2,7 @@
 # Check that implementation plan exists and find optional design documents
 # Usage: ./check-task-prerequisites.sh [--json]
 
-set -e
+set -Eeuo pipefail
 
 JSON_MODE=false
 for arg in "$@"; do
@@ -41,7 +41,7 @@ if $JSON_MODE; then
     docs=()
     [[ -f "$RESEARCH" ]] && docs+=("research.md")
     [[ -f "$DATA_MODEL" ]] && docs+=("data-model.md")
-    ([[ -d "$CONTRACTS_DIR" ]] && [[ -n "$(ls -A "$CONTRACTS_DIR" 2>/dev/null)" ]]) && docs+=("contracts/")
+    ([[ -d "$CONTRACTS_DIR" ]] && compgen -G "$CONTRACTS_DIR/*" >/dev/null) && docs+=("contracts/")
     [[ -f "$QUICKSTART" ]] && docs+=("quickstart.md")
     # join array into JSON
     json_docs=$(printf '"%s",' "${docs[@]}")
