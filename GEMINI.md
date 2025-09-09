@@ -3,7 +3,11 @@
 Auto-generated from all feature plans. Last updated: 2025-09-08
 
 ## Active Technologies
--  +  (002-reference-the-most)
+## Active Technologies
+- 002-reference-the-most
+
+## Recent Changes
+- 002-reference-the-most: Added PreToolUseHook and MorphEditInterceptor
 
 ## Project Structure
 ```
