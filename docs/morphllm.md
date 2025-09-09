@@ -26,7 +26,7 @@ concepts are:
 You must create a Morph account and generate an API key in order to use
 the HTTP API.  Log in to the [Morph dashboard](https://morphllm.com/dashboard)
 and navigate to **API Keys**.  The key should be stored securely; this
-project uses the system keychain via the `morph-hook install` command.
+project uses the system keychain via the `m-m_claude install` command (or `npm run setup:claude`).
 
 ## API endpoints
 

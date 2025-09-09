@@ -39,7 +39,7 @@ The command + hook approach introduces some operational complexity:
 * A watcher process must be running in the background (or triggered via
   Git hooks) for edits to take effect.
 * Users must configure their Morph API key ahead of time via the
-  `morph-hook install` command.  Key management is delegated to the OS
+  `m-m_claude install` command (or `npm run setup:claude`).  Key management is delegated to the OS
   keychain.
 * Because the watcher writes to `.morph/out` asynchronously, there may be
   a short delay between enqueueing an intent and seeing the edits applied.

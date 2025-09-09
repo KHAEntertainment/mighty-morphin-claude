@@ -1,7 +1,64 @@
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
 import { loadConfig } from './config.js';
 import { getApiKey } from './keychain.js';
+
+/**
+ * Intercepts and applies edit requests using the MorphLLM backend.
+ */
+export class MorphEditInterceptor {
+  /**
+   * Creates an instance of MorphEditInterceptor.
+   * @param account The account name for the MorphLLM API.
+   */
+  constructor(private account: string) {}
+
+  /**
+   * Intercepts an edit request and applies it using the MorphLLM backend.
+   * @param request The edit request to intercept and apply.
+   * @returns A promise that resolves to an EditResult indicating success or failure.
+   */
+  async interceptAndApply(request: EditRequest): Promise<EditResult> {
+    try {
+      const backend = await createBackend(this.account);
+      const result = await backend.apply(request.goal, request.files, false);
+
+      // Assuming result.edits contains the modified files and result.logs contains diffs
+      const modifiedFiles = result.edits.map(edit => ({
+        path: edit.path,
+        content: edit.patch // Assuming patch contains the full content after applying
+      }));
+
+      return {
+        success: true,
+        modifiedFiles: modifiedFiles,
+        diffs: [result.logs] // Assuming logs can be treated as diffs for now
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+}
+
+/**
+ * Represents the result of an edit operation.
+ */
+export interface EditResult {
+  success: boolean;
+  modifiedFiles?: { path: string; content: string }[];
+  diffs?: string[];
+  error?: string;
+}
+
+/**
+ * Represents a request to perform an edit operation.
+ */
+export interface EditRequest {
+  goal: string;
+  files: FilePayload[];
+}
 
 export interface FilePayload {
   path: string;
@@ -56,6 +113,19 @@ async function findMorphCli(): Promise<string | null> {
   return null;
 }
 
+async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 100): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && (error.message.includes('50') || error.message.includes('ETIMEDOUT') || error.message.includes('ECONNREFUSED'))) {
+      console.warn(`Retrying after error: ${error.message}. Retries left: ${retries}`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 class CliBackend implements Backend {
   constructor(private binary: string) {}
 
@@ -97,7 +167,7 @@ class HttpBackend implements Backend {
   async apply(goal: string, files: FilePayload[], dryRun: boolean): Promise<ApplyResult> {
     const apiKey = await getApiKey(this.account);
     if (!apiKey) {
-      throw new Error('No Morph API key available.  Run `morph-hook install` first.');
+      throw new Error('No Morph API key available.  Run `m-m_claude install` or `npm run setup:claude` first.');
     }
     const payload = {
       goal,
@@ -105,19 +175,23 @@ class HttpBackend implements Backend {
       files,
     };
     const url = `${this.apiBase.replace(/\/$/, '')}/apply`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Morph API responded with ${res.status}: ${text}`);
-    }
-    const data = (await res.json()) as ApplyResult;
-    return data;
+
+    const fetchWithRetry = async () => {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Morph API responded with ${res.status}: ${text}`);
+      }
+      return (await res.json()) as ApplyResult;
+    };
+
+    return retry(fetchWithRetry);
   }
 }

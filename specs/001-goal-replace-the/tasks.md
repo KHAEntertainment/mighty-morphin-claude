@@ -33,8 +33,8 @@
 
 ## Phase 3.5: Polish
 - [x] T013 [P] Update the `README.md` with the new installation and usage instructions as defined in `docs/upgrade-guide.md`.
-- [ ] T014 Run the installer `npm run setup:claude` to configure the project.
-- [ ] T015 Run the smoke test `npm run test:hook` to verify the implementation.
+- [x] T014 Run the installer `npm run setup:claude` to configure the project.
+- [x] T015 Run the smoke test `npm run test:hook` to verify the implementation.
 
 ## Dependencies
 - T001, T002, T003 must be completed before other tasks.
