@@ -10,7 +10,7 @@ To verify that the `PreToolUseHook` class correctly intercepts Claude's tool cal
 - **Preconditions**:
     - Mock `MorphEditInterceptor.interceptAndApply` to return a successful `EditResult`.
 - **Steps**:
-    1. Call `PreToolUseHook.onPreToolUse('write_file', { filePath: 'test.txt', content: 'new content' })`.
+    1. Call `PreToolUseHook.onPreToolUse('write_file', { file_path: 'test.txt', content: 'new content' }, { filePath: 'test.txt' })`.
 - **Expected Outcome**:
     - `MorphEditInterceptor.interceptAndApply` should have been called with the correct `EditRequest`.
     - The `onPreToolUse` method should return `true`.
