@@ -38,7 +38,7 @@ export class PreToolUseHook {
       const newString: string | undefined = toolInput?.new_string; // For replace
 
       if (!filePath) {
-        console.error(pc.yellow(`[morph] PreToolUseHook: No file_path resolved for tool ${toolName}; skipping interception.`));
+        console.error(pc.yellow(`[m-m_claude] PreToolUseHook: No file_path resolved for tool ${toolName}; skipping interception.`));
         return false;
       }
 
@@ -61,12 +61,12 @@ export class PreToolUseHook {
           files.push({ path: toolInput.file_path, content: toolInput.content });
         }
       } else {
-        console.error(pc.yellow(`[morph] PreToolUseHook: Unsupported tool input for ${toolName}; skipping interception.`));
+        console.error(pc.yellow(`[m-m_claude] PreToolUseHook: Unsupported tool input for ${toolName}; skipping interception.`));
         return false;
       }
 
       if (files.length === 0) {
-        console.error(pc.yellow(`[morph] PreToolUseHook: No valid file payloads for tool ${toolName}; skipping interception.`));
+        console.error(pc.yellow(`[m-m_claude] PreToolUseHook: No valid file payloads for tool ${toolName}; skipping interception.`));
         return false;
       }
 
@@ -79,14 +79,14 @@ export class PreToolUseHook {
         const editResult: EditResult = await this.morphEditInterceptor.interceptAndApply(editRequest);
 
         if (editResult.success) {
-          console.log(pc.green(`[morph] PreToolUseHook: Successfully applied changes for ${toolName} to ${editResult.modifiedFiles?.map(f => f.path).join(', ')}`));
+          console.log(pc.green(`[m-m_claude] PreToolUseHook: Successfully applied changes for ${toolName} to ${editResult.modifiedFiles?.map(f => f.path).join(', ')}`));
           return true; // Handled by MorphLLM, Claude's original tool should be skipped
         } else {
-          console.error(pc.red(`[morph] PreToolUseHook: MorphLLM failed to apply changes for ${toolName}: ${editResult.error}. Falling back to Claude's original tool.`));
+          console.error(pc.red(`[m-m_claude] PreToolUseHook: MorphLLM failed to apply changes for ${toolName}: ${editResult.error}. Falling back to Claude's original tool.`));
           return false; // MorphLLM failed, Claude's original tool should proceed
         }
       } catch (e: any) {
-        console.error(pc.red(`[morph] PreToolUseHook: Error during MorphLLM interception for ${toolName}: ${e?.message ?? String(e)}. Falling back to Claude's original tool.`));
+        console.error(pc.red(`[m-m_claude] PreToolUseHook: Error during MorphLLM interception for ${toolName}: ${e?.message ?? String(e)}. Falling back to Claude's original tool.`));
         return false; // Error during interception, Claude's original tool should proceed
       }
     } else {

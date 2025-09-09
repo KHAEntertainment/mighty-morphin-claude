@@ -51,14 +51,14 @@ When paired with code assistants like Claude or GPT-4, Mighty Morphin Claude mak
 
 ### CLI Commands
 
-The main CLI tool (`morph-hook`) provides several subcommands:
+The main CLI tool (`m-m_claude`) provides several subcommands:
 
 1. **install** - Configure and store your Morph API key
 2. **watch** - Watch the queue for edit intents and process them
 3. **enqueue** - Enqueue an edit intent for processing
 4. **precommit** - Reconcile staged changes with Morph before committing
 5. **status** - Show recent Morph operations
-6. **githook** - Manage Git hooks for morph-hook (install/uninstall)
+6. **githook** - Manage Git hooks for m-m_claude (install/uninstall)
 
 ### Claude Integration Hook
 
@@ -110,16 +110,16 @@ npm run setup:claude
 
 ```bash
 # Watch for edit intents
-morph-hook watch
+m-m_claude watch
 
 # Enqueue an edit intent
-morph-hook enqueue "Rename function processItems to transformItems" -f "src/**/*.ts"
+m-m_claude enqueue "Rename function processItems to transformItems" -f "src/**/*.ts"
 
 # Check status of recent operations
-morph-hook status
+m-m_claude status
 
 # Install Git pre-commit hook
-morph-hook githook install
+m-m_claude githook install
 ```
 
 ## Integration Patterns

@@ -113,6 +113,19 @@ async function findMorphCli(): Promise<string | null> {
   return null;
 }
 
+async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 100): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && (error.message.includes('50') || error.message.includes('ETIMEDOUT') || error.message.includes('ECONNREFUSED'))) {
+      console.warn(`Retrying after error: ${error.message}. Retries left: ${retries}`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 class CliBackend implements Backend {
   constructor(private binary: string) {}
 
@@ -154,7 +167,7 @@ class HttpBackend implements Backend {
   async apply(goal: string, files: FilePayload[], dryRun: boolean): Promise<ApplyResult> {
     const apiKey = await getApiKey(this.account);
     if (!apiKey) {
-      throw new Error('No Morph API key available.  Run `morph-hook install` first.');
+      throw new Error('No Morph API key available.  Run `m-m_claude install` or `npm run setup:claude` first.');
     }
     const payload = {
       goal,
@@ -162,19 +175,23 @@ class HttpBackend implements Backend {
       files,
     };
     const url = `${this.apiBase.replace(/\/$/, '')}/apply`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Morph API responded with ${res.status}: ${text}`);
-    }
-    const data = (await res.json()) as ApplyResult;
-    return data;
+
+    const fetchWithRetry = async () => {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Morph API responded with ${res.status}: ${text}`);
+      }
+      return (await res.json()) as ApplyResult;
+    };
+
+    return retry(fetchWithRetry);
   }
 }

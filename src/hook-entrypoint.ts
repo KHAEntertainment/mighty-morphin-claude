@@ -70,14 +70,14 @@ function extractBetween(text: string, startTag = "<merged>", endTag = "</merged>
 async function main() {
   const raw = await readStdin();
   if (!raw?.trim()) {
-    console.error(pc.yellow("[morph] No hook input on stdin; skipping."));
+    console.error(pc.yellow("[m-m_claude] No hook input on stdin; skipping."));
     process.exit(0);
   }
 
   let input: any;
   try { input = JSON.parse(raw); }
   catch (e) {
-    console.error(pc.red(`[morph] Failed to parse hook input JSON: ${String(e)}`));
+    console.error(pc.red(`[m-m_claude] Failed to parse hook input JSON: ${String(e)}`));
     process.exit(1);
   }
 
@@ -89,7 +89,7 @@ async function main() {
   const account = config.account;
 
   if (!account) {
-    console.error(pc.red("[morph] Account not configured. Run `morph-hook install` first."));
+    console.error(pc.red("[m-m_claude] Account not configured. Run `m-m_claude install` or `npm run setup:claude` first."));
     process.exit(1);
   }
 
@@ -108,6 +108,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(pc.red(`[morph] Unexpected error: ${String(e)}`));
+  console.error(pc.red(`[m-m_claude] Unexpected error: ${String(e)}`));
   process.exit(1);
 });

@@ -49,11 +49,11 @@ export default function watchCommand(program: Command): void {
           }
           writeLog({ id: id, status: 'ok', content: logContent });
           fs.unlinkSync(file);
-          console.log(`[morph-hook] processed ${id}`);
+          console.log(`[m-m_claude] processed ${id}`);
         } catch (err) {
           writeLog({ id: id, status: 'error', content: String(err) });
           fs.unlinkSync(file);
-          console.error(`[morph-hook] error processing ${id}:`, err);
+          console.error(`[m-m_claude] error processing ${id}:`, err);
         }
       };
       // Initial scan
@@ -70,7 +70,7 @@ export default function watchCommand(program: Command): void {
         setTimeout(() => {
           if (fs.existsSync(full)) {
             handleFile(full).catch((err) => {
-              console.error('[morph-hook] unexpected error:', err);
+              console.error('[m-m_claude] unexpected error:', err);
             });
           }
         }, 150);

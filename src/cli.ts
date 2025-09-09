@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Entry point for the morph-hook CLI.  This file wires together the
+ * Entry point for the Mighty‑Morphin‑Claude CLI.  This file wires together the
  * various subcommands defined in the `commands` directory.  The CLI
  * intentionally performs minimal work itself; heavy lifting happens in
  * individual command modules.
@@ -31,8 +31,8 @@ async function getVersion(): Promise<string> {
 async function main(argv: string[]): Promise<void> {
   const program = new Command();
   program
-    .name('morph-hook')
-    .description('MorphLLM FastApply command/hook integration')
+    .name('m-m_claude')
+    .description('Mighty‑Morphin‑Claude: MorphLLM Fast‑Apply command/hook integration')
     .version(await getVersion(), '-v, --version', 'output the current version');
 
   // Register subcommands

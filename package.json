@@ -1,11 +1,11 @@
 {
-  "name": "morph-hook",
+  "name": "mighty-morphin-claude",
   "version": "0.1.0",
   "description": "Command/hook integration for MorphLLM FastApply",
   "main": "dist/cli.js",
   "type": "module",
   "bin": {
-    "morph-hook": "dist/cli.js"
+    "m-m_claude": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p .",
@@ -55,6 +55,7 @@
     "ts-jest": "^29.4.1",
     "ts-jest-resolver": "^2.0.1",
     "tsx": "^4.19.0",
+    "strip-json-comments": "^3.1.1",
     "typescript": "^5.1.6"
   }
 }

@@ -11,7 +11,7 @@ function installHook() {
   const hooksDir = path.join(gitDir, 'hooks');
   fs.mkdirSync(hooksDir, { recursive: true });
   const hookPath = path.join(hooksDir, 'pre-commit');
-  const script = '#!/usr/bin/env bash\nset -euo pipefail\nexec morph-hook precommit\n';
+  const script = '#!/usr/bin/env bash\nset -euo pipefail\nexec m-m_claude precommit\n';
   fs.writeFileSync(hookPath, script, { mode: 0o755 });
   console.log('Installed pre-commit hook.');
 }
@@ -29,7 +29,7 @@ function uninstallHook() {
 export default function githookCommand(program: Command): void {
   const cmd = program
     .command('githook')
-    .description('Manage Git hooks for morph-hook');
+    .description('Manage Git hooks for m-m_claude');
   cmd
     .command('install')
     .description('Install the pre-commit hook')
