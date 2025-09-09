@@ -27,7 +27,12 @@ export class PreToolUseHook {
     const isFileEditTool = ["write_file", "replace", "MultiEdit", "Edit"].includes(toolName);
 
     if (isFileEditTool) {
-      const filePath: string | undefined = toolResp?.filePath || toolInput?.file_path;
+      const filePath: string | undefined =
+        toolResp?.filePath ??
+        toolResp?.path ??
+        toolInput?.file_path ??
+        toolInput?.filepath ??
+        toolInput?.path;
       const content: string | undefined = toolInput?.content; // For write_file
       const oldString: string | undefined = toolInput?.old_string; // For replace
       const newString: string | undefined = toolInput?.new_string; // For replace
